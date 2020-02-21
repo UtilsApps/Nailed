@@ -148,26 +148,33 @@ public class CameraManager {
         }
     }
 
-    public void takePicture(Context context) {
+    public void takePicture() {
 
         // get an image from the camera
         if(this.camera == null) {
             this.camera = getCameraInstance();
         }
 
+        boolean previewInitialized = false;
         try {
             //You can't take a picture without a preview,
             // but you don't have to show the preview on screen.
             // You can direct the output to a SurfaceTexture instead (API 11+).
             camera.setPreviewTexture(new SurfaceTexture(10));
+            previewInitialized = true;
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        //optional: set parameters
-        camera.startPreview();
 
-        camera.takePicture(null, null, null, jpegCallback);
+        if(previewInitialized) {
+            camera.startPreview();
+
+            camera.takePicture(null, null, null, jpegCallback);
+        }
+        else {
+            Log.e(TAG, "Skipping take picture");
+        }
     }
 
     private boolean safeCameraOpen(int id) {

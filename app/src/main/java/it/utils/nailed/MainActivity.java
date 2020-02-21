@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
 
     //TODO haptic feedback at each picture
     //use up/down volume
-    //TODO implement subdirs by hour if file count exceeds 5000
+
     //TODO make zipfiles
     //notification for running service
     //TODO ensure that it works as background service

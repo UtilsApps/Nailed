@@ -5,7 +5,9 @@ import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 public class ImageSaver {
@@ -14,6 +16,13 @@ public class ImageSaver {
 
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
+
+    final static FileFilter DIRS_ONLY_FILTER = new FileFilter() {
+        @Override
+        public boolean accept(File path) {
+            return path.isDirectory();
+        }
+    };
 
     /** Create a file Uri for saving an image or video */
     private static Uri getOutputMediaFileUri(int type){
@@ -48,34 +57,95 @@ public class ImageSaver {
         return mediaStorageSubDir;
     }
 
+    //TODO needs tests
     public static File getOutputMediaDirDaySpecific() {
         File mainOutputMediaDir = getMainOutputMediaDir();
 
+        //TODO check false on rename
+        //TODO check errors/fail on creating folders
+
         String yearPattern = "yyyy";
-        File yearSubDir = getTimeStampSubDir(mainOutputMediaDir, yearPattern);
+        File yearSubDir = getTimeStampSubDir(mainOutputMediaDir, yearPattern, true);
 
         String monthPattern = "yyyy.MM";
-        File monthSubDir = getTimeStampSubDir(yearSubDir, monthPattern);
+        File monthSubDir = getTimeStampSubDir(yearSubDir, monthPattern, true);
 
         String dayPattern = "yyyy.MM.dd";
-        File daySubDir = getTimeStampSubDir(monthSubDir, dayPattern);
+        File daySubDir = getTimeStampSubDir(monthSubDir, dayPattern, true);
+
+        //TODO check if there are no errors when the path is an emulated external storage
+        File bottomDir = new File(daySubDir.getPath());
+
+        //TODO set a separate task to move files
+
+        if(isExceedingFileCount(daySubDir)) {
+
+            File renamedAsTimeStampSubFolder = getNextTimeStampSubDir(daySubDir);
+            boolean renameSuccessful = daySubDir.renameTo(renamedAsTimeStampSubFolder);
+            if(!renameSuccessful) {
+                Log.e(TAG, "Failed renaming to " + renamedAsTimeStampSubFolder.toString());
+            }
+            bottomDir = renamedAsTimeStampSubFolder;
+        }
+
+        File[] timeSubDirs = daySubDir.listFiles(DIRS_ONLY_FILTER);
+        boolean hasTimeSubDirs = timeSubDirs.length > 0;
+
+        if(hasTimeSubDirs) {
+            Arrays.sort(timeSubDirs);
+            int lastIdx = timeSubDirs.length - 1;
+            File lastTimeSubDir = timeSubDirs[lastIdx];
+            bottomDir = lastTimeSubDir;
+
+            if(isExceedingFileCount(lastTimeSubDir)) {
+
+                File nextTimeStampSubDir = getNextTimeStampSubDir(daySubDir);
+                bottomDir = nextTimeStampSubDir;
+                createIfNotExists(bottomDir);
+            }
+        }
 
         return daySubDir;
     }
 
-    private static File getTimeStampSubDir(File parentDir, String datePattern) {
+    private static File getNextTimeStampSubDir(File daySubDir) {
+
+        File[] timeSubDirs = daySubDir.listFiles(DIRS_ONLY_FILTER);
+        int existingSubDirsCount = timeSubDirs.length;
+        String subDirNameCountPrefix = "'0" + existingSubDirsCount+1 + "'";
+
+        String timePattern = "yyyy.MM.dd " + subDirNameCountPrefix + " 'from h' HH.mm";
+        File newTimeSubDir = getTimeStampSubDir(daySubDir, timePattern, false);
+
+        return newTimeSubDir;
+    }
+
+    public static boolean isExceedingFileCount(File dir) {
+        int fileCountLimit = 5000;
+        return dir.listFiles().length >= fileCountLimit;
+    }
+
+    private static File getTimeStampSubDir(File parentDir, String datePattern, boolean create) {
 
         String timeStamp = new SimpleDateFormat(datePattern).format(new Date());
         File subDir = new File(parentDir, timeStamp);
 
-        if (!subDir.exists()){
-            if (! subDir.mkdirs()){
-                Log.d(TAG, "failed to create directory");
-                return null;
-            }
+        if (create) {
+            createIfNotExists(subDir);
         }
 
         return subDir;
+    }
+
+    public static boolean createIfNotExists(File dir) {
+        if (!dir.exists()){
+            if (! dir.mkdirs()){
+                Log.d(TAG, "failed to create directory " + dir.toString());
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Create a File for saving an image or video */

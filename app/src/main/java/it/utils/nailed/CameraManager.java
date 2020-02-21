@@ -58,6 +58,8 @@ public class CameraManager {
             } catch (IOException e) {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
             }
+
+
         }
     };
 
@@ -231,6 +233,11 @@ public class CameraManager {
     }
 
     public Camera.Size getPreferredPhotoSize() {
+
+        if(camera == null) {
+            return null;
+        }
+
         Camera.Parameters params = camera.getParameters();
         List<Camera.Size> supportedSizes = params.getSupportedPictureSizes();
 

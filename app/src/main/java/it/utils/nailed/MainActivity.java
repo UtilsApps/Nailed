@@ -26,17 +26,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 cameraManager.takePicture(myContext);
+                updatePicCountTV();
+                updatePicSizeTV();
             }
         });
 
-        TextView picCounterTV = findViewById(R.id.photoCountTV);
-
-        TextView picSizeTV = findViewById(R.id.pictureSizeTV);
-        Camera.Size picSize = cameraManager.getPreferredPhotoSize();
-        picSizeTV.setText(picSize.height + " x " + picSize.width);
+        updatePicCountTV();
+        updatePicSizeTV();
 
         TextView outDirTV = findViewById(R.id.outDirTV);
         outDirTV.setText(ImageSaver.getOutputMediaDir().getPath());
+    }
+
+    private void updatePicSizeTV() {
+        TextView picSizeTV = findViewById(R.id.pictureSizeTV);
+        Camera.Size picSize = cameraManager.getPreferredPhotoSize();
+
+        if(picSize != null) {
+            picSizeTV.setText(picSize.height + " x " + picSize.width);
+        }
+    }
+
+    private void updatePicCountTV() {
+        TextView picCounterTV = findViewById(R.id.photoCountTV);
+        int imgCount = ImageSaver.getOutputMediaDir().listFiles().length;
+        picCounterTV.setText("" + imgCount);
     }
 
     @Override

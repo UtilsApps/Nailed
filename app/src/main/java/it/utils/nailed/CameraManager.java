@@ -255,17 +255,22 @@ public class CameraManager {
 
     private void setCameraParams() {
 
-        // get Camera parameters
-        Camera.Parameters params = camera.getParameters();
-        // set the focus mode
-        //params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-        //params.setJpegQuality(95);
+        try {
+            // get Camera parameters
+            Camera.Parameters params = camera.getParameters();
+            // set the focus mode
+            //params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+            //params.setJpegQuality(95);
 
-        Camera.Size preferredSize = getPreferredPhotoSize();
+            Camera.Size preferredSize = getPreferredPhotoSize();
 
-        params.setPictureSize(preferredSize.width, preferredSize.height);
+            params.setPictureSize(preferredSize.width, preferredSize.height);
 
-        // set Camera parameters
-        camera.setParameters(params);
+            // set Camera parameters
+            camera.setParameters(params);
+        }
+        catch (Exception e) {
+            Log.e(TAG, "Unable to set camera params: " + e.toString());
+        }
     }
 }

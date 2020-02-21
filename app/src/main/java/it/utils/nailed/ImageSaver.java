@@ -16,6 +16,7 @@ public class ImageSaver {
 
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
+    public static int FILE_COUNT_LIMIT = 5000;//5000;
 
     final static FileFilter DIRS_ONLY_FILTER = new FileFilter() {
         @Override
@@ -80,12 +81,16 @@ public class ImageSaver {
 
         if(isExceedingFileCount(daySubDir)) {
 
+            Log.i(TAG, "Day dir is has more than " + FILE_COUNT_LIMIT + " files");
+
+            //FIXME renaming files, try use a tmp folder, don't directly move as its own subdir
             File renamedAsTimeStampSubFolder = getNextTimeStampSubDir(daySubDir);
             boolean renameSuccessful = daySubDir.renameTo(renamedAsTimeStampSubFolder);
             if(!renameSuccessful) {
                 Log.e(TAG, "Failed renaming to " + renamedAsTimeStampSubFolder.toString());
             }
             bottomDir = renamedAsTimeStampSubFolder;
+            Log.i(TAG, "New bottom dir: " + bottomDir.toString());
         }
 
         File[] timeSubDirs = daySubDir.listFiles(DIRS_ONLY_FILTER);
@@ -99,9 +104,12 @@ public class ImageSaver {
 
             if(isExceedingFileCount(lastTimeSubDir)) {
 
+                Log.i(TAG, "Time subdir is has more than " + FILE_COUNT_LIMIT + " files");
+
                 File nextTimeStampSubDir = getNextTimeStampSubDir(daySubDir);
                 bottomDir = nextTimeStampSubDir;
                 createIfNotExists(bottomDir);
+                Log.i(TAG, "New bottom dir: " + bottomDir.toString());
             }
         }
 
@@ -121,8 +129,8 @@ public class ImageSaver {
     }
 
     public static boolean isExceedingFileCount(File dir) {
-        int fileCountLimit = 5000;
-        return dir.listFiles().length >= fileCountLimit;
+
+        return dir.listFiles().length >= FILE_COUNT_LIMIT;
     }
 
     private static File getTimeStampSubDir(File parentDir, String datePattern, boolean create) {

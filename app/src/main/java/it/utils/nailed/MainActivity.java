@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         takePicBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startBurst(getTimer());
+                startBurst();
             }
         });
 
@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void startBurst(Timer timer) {
+    private void startBurst() {
 
         //Set how long before to start calling the TimerTask (in milliseconds)
         int delay = 0;
@@ -81,8 +81,10 @@ public class MainActivity extends AppCompatActivity {
         //Set the amount of time between each execution (in milliseconds)
         int periodMillis = 700;
 
+        resetTimer();
+
         //Set the schedule function and rate
-        timer.scheduleAtFixedRate(new TimerTask() {
+        getTimer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                   takeSinglePicture();

@@ -10,6 +10,8 @@ import java.util.Date;
 
 public class ImageSaver {
 
+    private static final String TAG = "ImageSaver";
+
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
@@ -18,7 +20,7 @@ public class ImageSaver {
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
-    public static File getOutputMediaDir() {
+    private static File getMainOutputMediaDir() {
 
         File mediaStorageMainDir;
 
@@ -38,7 +40,7 @@ public class ImageSaver {
         // Create the storage directory if it does not exist
         if (!mediaStorageSubDir.exists()){
             if (! mediaStorageSubDir.mkdirs()){
-                Log.d("MyCameraApp", "failed to create directory");
+                Log.d(TAG, "failed to create directory");
                 return null;
             }
         }
@@ -46,15 +48,47 @@ public class ImageSaver {
         return mediaStorageSubDir;
     }
 
+    public static File getOutputMediaDirDaySpecific() {
+        File mainOutputMediaDir = getMainOutputMediaDir();
+
+        String yearPattern = "yyyy";
+        File yearSubDir = getTimeStampSubDir(mainOutputMediaDir, yearPattern);
+
+        String monthPattern = "yyyy.MM";
+        File monthSubDir = getTimeStampSubDir(yearSubDir, monthPattern);
+
+        String dayPattern = "yyyy.MM.dd";
+        File daySubDir = getTimeStampSubDir(monthSubDir, dayPattern);
+
+        return daySubDir;
+    }
+
+    private static File getTimeStampSubDir(File parentDir, String datePattern) {
+
+        String timeStamp = new SimpleDateFormat(datePattern).format(new Date());
+        File subDir = new File(parentDir, timeStamp);
+
+        if (!subDir.exists()){
+            if (! subDir.mkdirs()){
+                Log.d(TAG, "failed to create directory");
+                return null;
+            }
+        }
+
+        return subDir;
+    }
+
     /** Create a File for saving an image or video */
     public static File getOutputMediaFile(int type){
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
 
-        File mediaStorageDir = getOutputMediaDir();
+        File mediaStorageDir = getOutputMediaDirDaySpecific();
+
+        final String fileNamePattern = "yyyy.MM.dd_'h'HH.mm.ss";
 
                 // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat(fileNamePattern).format(new Date());
         File mediaFile;
         if (type == MEDIA_TYPE_IMAGE){
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +

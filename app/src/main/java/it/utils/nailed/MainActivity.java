@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         updateMainCameraTextViews();
 
         TextView outDirTV = findViewById(R.id.outDirTV);
-        outDirTV.setText(ImageSaver.getOutputMediaDir().getPath());
+        outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
     }
 
     private void updateMainCameraTextViews() {
@@ -108,14 +108,16 @@ public class MainActivity extends AppCompatActivity {
 
     //TODO haptic feedback at each picture
     //use up/down volume
-    //TODO autosort many files by dirs with time stamp
-    //make zipfiles
+    //TODO implement subdirs by hour if file count exceeds 5000
+    //TODO make zipfiles
     //notification for running service
+    //TODO ensure that it works as background service
+    // (buttons should actually start/stop the service)
 
 
     private void updatePicCountTV() {
         TextView picCounterTV = findViewById(R.id.photoCountTV);
-        int imgCount = ImageSaver.getOutputMediaDir().listFiles().length;
+        int imgCount = ImageSaver.getOutputMediaDirDaySpecific().listFiles().length;
         picCounterTV.setText("" + imgCount);
     }
 

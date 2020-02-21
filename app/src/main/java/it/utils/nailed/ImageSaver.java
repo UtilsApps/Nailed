@@ -19,20 +19,31 @@ public class ImageSaver {
     }
 
     public static File getOutputMediaDir() {
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "MyCameraApp");
+
+        File mediaStorageMainDir;
+
+        if(Environment.isExternalStorageEmulated ()) {
+            mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES);
+        }
+        else {
+            mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES);
+        }
+
+        File mediaStorageSubDir = new File(mediaStorageMainDir, "MyCameraApp");
         // This location works best if you want the created images to be shared
         // between applications and persist after your app has been uninstalled.
 
         // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
+        if (!mediaStorageSubDir.exists()){
+            if (! mediaStorageSubDir.mkdirs()){
                 Log.d("MyCameraApp", "failed to create directory");
                 return null;
             }
         }
 
-        return mediaStorageDir;
+        return mediaStorageSubDir;
     }
 
     /** Create a File for saving an image or video */

@@ -3,7 +3,6 @@ package it.utils.nailed;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.widget.FrameLayout;
 
 public class CameraActivity extends Activity {
 
@@ -16,7 +15,7 @@ public class CameraActivity extends Activity {
         //setContentView(R.layout.main);
 
         // Create an instance of Camera
-        mCamera = CameraManager.getCameraInstance();
+        mCamera = Camera1Manager.getCameraInstance();
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this, mCamera);

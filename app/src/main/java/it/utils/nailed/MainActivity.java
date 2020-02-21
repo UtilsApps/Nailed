@@ -2,7 +2,6 @@ package it.utils.nailed;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.view.View;
@@ -14,7 +13,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    CameraManager cameraManager;
+    Camera1Manager cameraManager;
 
     public Timer getTimer() {
         return _timer;
@@ -37,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         getSupportActionBar().hide();
 
-        this.cameraManager = new CameraManager(this, this);
+        this.cameraManager = new Camera1Manager(this, this);
 
         resetTimer();
 
@@ -75,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         cameraManager.close();
         this.resetTimer();
+        //this.finishAndRemoveTask();
         this.finish();
 
         //close other camera resources?
@@ -96,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void startBurst() {
 
+        this.cameraManager.startCameraPreview();
+
         //Set how long before to start calling the TimerTask (in milliseconds)
         int delay = 0;
 
@@ -115,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void stopBurst() {
         resetTimer();
+        this.cameraManager.stopCameraPreview();
+        this.cameraManager.close();
     }
 
     private void takeSinglePicture() {
@@ -148,6 +152,8 @@ public class MainActivity extends AppCompatActivity {
 
     //TODO try switch to android.hardware.camera2 when API >= 21
 
+    //TODO after a series of consecutive skips (10?), reset camera
+
     //..
 
     private void updatePicCountTV() {
@@ -164,6 +170,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String[] permissions, int[] grantResults) {
-        CameraManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Camera1Manager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }

@@ -24,14 +24,16 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
 //https://developer.android.com/guide/topics/media/camera.html#java
 
-public class CameraManager {
+public class Camera1Manager {
 
-    static final String TAG = "CameraManager";
+    static final String TAG = "Camera1Manager";
     public static final int MY_PERMISSIONS_REQUESTS = 400;
 
     private Camera camera;
-    private SurfaceView preview;
+    //private SurfaceView preview;
     private SurfaceTexture defaultSurfaceTexture;
+    private boolean previewInitialized;
+    private boolean previewStarted;
 
     public int getSkippedPicsCount() {
         return _skippedPicsCount;
@@ -74,7 +76,7 @@ public class CameraManager {
         }
     };
 
-    public CameraManager(Context context, Activity activity) {
+    public Camera1Manager(Context context, Activity activity) {
         this.checkForCameraPermission(context, activity);
 
         this.defaultSurfaceTexture = new SurfaceTexture(10);
@@ -83,7 +85,54 @@ public class CameraManager {
             this.camera = getCameraInstance();
         }
 
+        this.previewInitialized = false;
+        this.previewStarted = false;
+
         setCameraParams();
+    }
+
+    public boolean startCameraPreview() {
+
+        if(this.camera == null) {
+            this.camera = getCameraInstance();
+        }
+
+        try {
+            //You can't take a picture without a preview,
+            // but you don't have to show the preview on screen.
+            // You can direct the output to a SurfaceTexture instead (API 11+).
+            camera.setPreviewTexture(this.defaultSurfaceTexture);
+            this.previewInitialized = true;
+        } catch (IOException e) {
+            Log.e(TAG, e.toString());
+            this.previewInitialized = false;
+        }
+
+        if(previewInitialized) {
+            try {
+                camera.stopPreview();
+                camera.startPreview();
+                camera.setPreviewCallback(null);
+                this.previewStarted = true;
+            } catch (RuntimeException e) {
+                Log.e(TAG, e.toString());
+                e.printStackTrace();
+                this.previewStarted = false;
+            }
+        }
+
+        return previewStarted;
+    }
+
+    public boolean stopCameraPreview() {
+        try {
+            camera.stopPreview();
+            return true;
+        } catch (RuntimeException e) {
+            Log.e(TAG, e.toString());
+            return false;
+        }
+        //camera.setPreviewCallback(null);
     }
 
     public static boolean hasPermissions(Context context, String... permissions) {
@@ -132,14 +181,7 @@ public class CameraManager {
     }
 
     public void close() {
-        releaseCamera();
-    }
-
-    private void releaseCamera() {
-        if (camera != null){
-            camera.release();        // release the camera for other applications
-            camera = null;
-        }
+        releaseCameraAndPreview();
     }
 
     public static void onRequestPermissionsResult(int requestCode,
@@ -167,34 +209,7 @@ public class CameraManager {
 
     public void takePicture() {
 
-        // get an image from the camera
-        if(this.camera == null) {
-            this.camera = getCameraInstance();
-        }
-
-        boolean previewInitialized = false;
-        boolean previewStarted = false;
-        try {
-            //You can't take a picture without a preview,
-            // but you don't have to show the preview on screen.
-            // You can direct the output to a SurfaceTexture instead (API 11+).
-            camera.setPreviewTexture(this.defaultSurfaceTexture);
-            previewInitialized = true;
-        } catch (IOException e) {
-            Log.e(TAG, e.toString());
-        }
-
-        if(previewInitialized) {
-            try {
-                camera.stopPreview();
-                camera.startPreview();
-                camera.setPreviewCallback(null);
-                previewStarted = true;
-            } catch (RuntimeException e) {
-                Log.e(TAG, e.toString());
-                e.printStackTrace();
-            }
-        }
+        startCameraPreview();
 
         if(previewInitialized && previewStarted) {
             try {
@@ -203,11 +218,16 @@ public class CameraManager {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
                 this.incrementSkippedPicsCount();
+
+                //resetting the params in case that's why preview fails
+                setCameraParams();
+                startCameraPreview();
             }
         }
         else {
             Log.e(TAG, "Skipping take picture");
             this.incrementSkippedPicsCount();
+            setCameraParams();//resetting the params in case that's why preview fails
         }
     }
 
@@ -226,7 +246,7 @@ public class CameraManager {
         return qOpened;
     }
 
-    private void releaseCameraAndPreview() {
+    public void releaseCameraAndPreview() {
 
         //preview.setCamera(null);
 
@@ -234,6 +254,11 @@ public class CameraManager {
             camera.release();
             camera = null;
         }
+    }
+
+    private void resetCamera() {
+        this.releaseCameraAndPreview();
+        this.camera = getCameraInstance();
     }
 
     /** A safe way to get an instance of the Camera object. */
@@ -245,7 +270,7 @@ public class CameraManager {
         }
         catch (Exception e){
             // Camera is not available (in use or does not exist)
-            Log.e("Nailed", "failed to getCameraInstance");
+            Log.e(TAG, "failed to get Camera Instance: " + e.toString());
             e.printStackTrace();
         }
         return c; // returns null if camera is unavailable

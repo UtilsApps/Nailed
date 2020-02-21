@@ -57,10 +57,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        final Button closeAppBtn = findViewById(R.id.closeAppBtn);
+        closeAppBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeApp();
+            }
+        });
+
         updateMainCameraTextViews();
 
         TextView outDirTV = findViewById(R.id.outDirTV);
         outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
+    }
+
+    private void closeApp() {
+
+        cameraManager.close();
+        this.resetTimer();
+        this.finish();
+
+        //close other camera resources?
+        //close file saver resources?
+
+        //terminate app threads, not only activity
     }
 
     private void updateMainCameraTextViews() {
@@ -129,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
     //TODO try switch to android.hardware.camera2 when API >= 21
 
     //..
-
 
     private void updatePicCountTV() {
         TextView picCounterTV = findViewById(R.id.photoCountTV);

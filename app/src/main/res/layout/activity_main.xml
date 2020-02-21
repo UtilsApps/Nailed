@@ -31,16 +31,17 @@
                 <Button
                     android:id="@+id/takePicBtn"
                     android:textColor="@color/colorEletricBlue"
-                    android:background="@color/colorBlack"
+                    android:background="@drawable/button_border"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="1dp"
                     android:text="Start burst"
                     >
                 </Button>
                 <Button
                     android:id="@+id/stopBurstBtn"
                     android:textColor="@color/colorEletricBlue"
-                    android:background="@color/colorBlack"
+                    android:background="@drawable/button_border"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Stop burst"
@@ -68,6 +69,7 @@
             android:id="@+id/pictureSizeTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
             android:text="0 x 0"
             >
         </TextView>
@@ -75,11 +77,21 @@
             android:id="@+id/outDirTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
             android:text="/"
             android:gravity="center"
             >
 
         </TextView>
+        <Button
+            android:id="@+id/closeAppBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
+            android:background="@drawable/button_border"
 
+            android:text="Close"
+            >
+        </Button>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

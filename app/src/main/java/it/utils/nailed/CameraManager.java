@@ -131,6 +131,10 @@ public class CameraManager {
         }
     }
 
+    public void close() {
+        releaseCamera();
+    }
+
     private void releaseCamera() {
         if (camera != null){
             camera.release();        // release the camera for other applications
@@ -178,7 +182,6 @@ public class CameraManager {
             previewInitialized = true;
         } catch (IOException e) {
             Log.e(TAG, e.toString());
-            e.printStackTrace();
         }
 
         if(previewInitialized) {

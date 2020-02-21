@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 updatePicCountTV();
+                updateSkippedPicsCountTV();
                 updatePicSizeTV();
             }
         });
@@ -134,6 +135,11 @@ public class MainActivity extends AppCompatActivity {
         TextView picCounterTV = findViewById(R.id.photoCountTV);
         int imgCount = ImageSaver.getOutputMediaDirDaySpecific().listFiles().length;
         picCounterTV.setText("" + imgCount);
+    }
+
+    private void updateSkippedPicsCountTV() {
+        TextView skippedPicsCountTV = findViewById(R.id.skippedCountTV);
+        skippedPicsCountTV.setText("Skipped: " + cameraManager.getSkippedPicsCount());
     }
 
     @Override

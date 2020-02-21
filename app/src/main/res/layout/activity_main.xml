@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="#000000"
+    android:background="@color/colorBlack"
     >
 
     <LinearLayout
@@ -31,7 +31,7 @@
                 <Button
                     android:id="@+id/takePicBtn"
                     android:textColor="@color/colorEletricBlue"
-                    android:background="#000000"
+                    android:background="@color/colorBlack"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Start burst"
@@ -40,7 +40,7 @@
                 <Button
                     android:id="@+id/stopBurstBtn"
                     android:textColor="@color/colorEletricBlue"
-                    android:background="#000000"
+                    android:background="@color/colorBlack"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Stop burst"
@@ -54,6 +54,14 @@
             android:padding="8dp"
             android:textColor="@color/colorEletricBlue"
             android:text="0">
+        </TextView>
+        <TextView
+            android:id="@+id/skippedCountTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textColor="@color/colorEletricBlue"
+            android:text="Skipped: 0">
         </TextView>
     </LinearLayout>
         <TextView

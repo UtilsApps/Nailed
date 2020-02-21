@@ -33,6 +33,16 @@ public class CameraManager {
     private SurfaceView preview;
     private SurfaceTexture defaultSurfaceTexture;
 
+    public int getSkippedPicsCount() {
+        return _skippedPicsCount;
+    }
+
+    public void incrementSkippedPicsCount() {
+        this._skippedPicsCount++;
+    }
+
+    private int _skippedPicsCount;
+
     //TODO set photo size
     // allow setting it
     // allow change size with volume up/down, and take continuous pics on and off with screen tap
@@ -189,11 +199,12 @@ public class CameraManager {
             } catch (RuntimeException e) {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
+                this.incrementSkippedPicsCount();
             }
-
         }
         else {
             Log.e(TAG, "Skipping take picture");
+            this.incrementSkippedPicsCount();
         }
     }
 

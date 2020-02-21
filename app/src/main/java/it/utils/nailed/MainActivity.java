@@ -16,6 +16,20 @@ public class MainActivity extends AppCompatActivity {
 
     CameraManager cameraManager;
 
+    public Timer getTimer() {
+        return _timer;
+    }
+
+    public void resetTimer() {
+
+        if(_timer != null) {
+            _timer.cancel();
+        }
+        this._timer = new Timer();
+    }
+
+    Timer _timer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,13 +37,13 @@ public class MainActivity extends AppCompatActivity {
 
         this.cameraManager = new CameraManager(this, this);
 
-        //Declare the timer
-        final Timer timer = new Timer();
+        resetTimer();
+
         Button takePicBtn = findViewById(R.id.takePicBtn);
         takePicBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startBurst(timer);
+                startBurst(getTimer());
             }
         });
 
@@ -37,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         stopBurstBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopBurst(timer);
+                stopBurst();
             }
         });
 
@@ -74,8 +88,8 @@ public class MainActivity extends AppCompatActivity {
         },delay,periodMillis);
     }
 
-    private void stopBurst(Timer timer) {
-        timer.cancel();
+    private void stopBurst() {
+        resetTimer();
     }
 
     private void takeSinglePicture() {
@@ -94,6 +108,10 @@ public class MainActivity extends AppCompatActivity {
 
     //TODO haptic feedback at each picture
     //use up/down volume
+    //TODO autosort many files by dirs with time stamp
+    //make zipfiles
+    //notification for running service
+
 
     private void updatePicCountTV() {
         TextView picCounterTV = findViewById(R.id.photoCountTV);

@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         int delay = 0;
 
         //Set the amount of time between each execution (in milliseconds)
-        int periodMillis = 1000;
+        int periodMillis = 700;
 
         //Set the schedule function and rate
         timer.scheduleAtFixedRate(new TimerTask() {

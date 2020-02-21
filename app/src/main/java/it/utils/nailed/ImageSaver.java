@@ -18,6 +18,8 @@ public class ImageSaver {
     public static final int MEDIA_TYPE_VIDEO = 2;
     public static int FILE_COUNT_LIMIT = 5000;//5000;
 
+    private static File mediaStorageMainDir;
+
     final static FileFilter DIRS_ONLY_FILTER = new FileFilter() {
         @Override
         public boolean accept(File path) {
@@ -25,15 +27,7 @@ public class ImageSaver {
         }
     };
 
-    /** Create a file Uri for saving an image or video */
-    private static Uri getOutputMediaFileUri(int type){
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
-
-    private static File getMainOutputMediaDir() {
-
-        File mediaStorageMainDir;
-
+    static {
         if(Environment.isExternalStorageEmulated ()) {
             mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_PICTURES);
@@ -42,6 +36,14 @@ public class ImageSaver {
             mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_PICTURES);
         }
+    }
+
+    /** Create a file Uri for saving an image or video */
+    private static Uri getOutputMediaFileUri(int type){
+        return Uri.fromFile(getOutputMediaFile(type));
+    }
+
+    private static File getMainOutputMediaDir() {
 
         File mediaStorageSubDir = new File(mediaStorageMainDir, "MyCameraApp");
         // This location works best if you want the created images to be shared

@@ -31,6 +31,7 @@ public class CameraManager {
 
     private Camera camera;
     private SurfaceView preview;
+    private SurfaceTexture defaultSurfaceTexture;
 
     //TODO set photo size
     // allow setting it
@@ -65,6 +66,8 @@ public class CameraManager {
 
     public CameraManager(Context context, Activity activity) {
         this.checkForCameraPermission(context, activity);
+
+        this.defaultSurfaceTexture = new SurfaceTexture(10);
 
         if(this.camera == null) {
             this.camera = getCameraInstance();
@@ -156,21 +159,38 @@ public class CameraManager {
         }
 
         boolean previewInitialized = false;
+        boolean previewStarted = false;
         try {
             //You can't take a picture without a preview,
             // but you don't have to show the preview on screen.
             // You can direct the output to a SurfaceTexture instead (API 11+).
-            camera.setPreviewTexture(new SurfaceTexture(10));
+            camera.setPreviewTexture(this.defaultSurfaceTexture);
             previewInitialized = true;
         } catch (IOException e) {
-            // TODO Auto-generated catch block
+            Log.e(TAG, e.toString());
             e.printStackTrace();
         }
 
         if(previewInitialized) {
-            camera.startPreview();
+            try {
+                camera.stopPreview();
+                camera.startPreview();
+                camera.setPreviewCallback(null);
+                previewStarted = true;
+            } catch (RuntimeException e) {
+                Log.e(TAG, e.toString());
+                e.printStackTrace();
+            }
+        }
 
-            camera.takePicture(null, null, null, jpegCallback);
+        if(previewInitialized && previewStarted) {
+            try {
+                camera.takePicture(null, null, null, jpegCallback);
+            } catch (RuntimeException e) {
+                Log.e(TAG, e.toString());
+                e.printStackTrace();
+            }
+
         }
         else {
             Log.e(TAG, "Skipping take picture");

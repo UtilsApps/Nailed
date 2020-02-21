@@ -116,6 +116,17 @@ public class MainActivity extends AppCompatActivity {
     //TODO ensure that it works as background service
     // (buttons should actually start/stop the service)
 
+    //TODO add confirmation for stop burst
+
+    //TODO check peformance hogs, put time lapse checks
+    //check why it slows down after a few hundreds files
+
+    //TODO add counter for skipped photos for failed preview init, preview start, or take picture
+
+    //TODO try switch to android.hardware.camera2 when API >= 21
+
+    //..
+
 
     private void updatePicCountTV() {
         TextView picCounterTV = findViewById(R.id.photoCountTV);

@@ -245,7 +245,16 @@ public class CameraManager {
             return null;
         }
 
-        Camera.Parameters params = camera.getParameters();
+        Camera.Parameters params;
+
+        try {
+            params = camera.getParameters();
+        }
+        catch (RuntimeException e) {
+            Log.e(TAG, "Failed getting camera params, " + e.toString());
+            return null;
+        }
+
         List<Camera.Size> supportedSizes = params.getSupportedPictureSizes();
 
         int preferredSizeIdx = 11;

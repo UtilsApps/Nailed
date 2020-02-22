@@ -41,7 +41,7 @@ public class Camera1Manager {
     private int consecutivePicSkips;
     private static final int MAX_SKIPS = 10;
 
-    private enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, OFF }
+    private enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, SAVING, OFF }
     private BurstState myBurstState;
 
     public boolean isBurstOn() {
@@ -92,6 +92,7 @@ public class Camera1Manager {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
+            myBurstState = BurstState.SAVING;
             Log.d(TAG, "onPictureTaken");
 
             File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
@@ -111,6 +112,8 @@ public class Camera1Manager {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
             }
 
+            //TODO FIXME: is preview usually still open after a picture has been taken?
+            myBurstState = BurstState.ON_IDLE;
             onPicTakenCallBack.updateMainCameraTextViews();
         }
     };
@@ -293,15 +296,29 @@ public class Camera1Manager {
         getTimer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                //TODO check/wait for previous tick/run before proceeding with a new one
-                takeSinglePicture();
+                //TODO check what the BufferQueueProducer does, SurfaceTexture
+
+                if (myBurstState != BurstState.ON_PIC_PENDING) {
+                    takeSinglePicture();
+                }
+                else {
+                    Log.w(TAG, "Pic pending, skipping..");
+                }
             }
         },delay,periodMillis);
     }
 
+    //TODO FIXME
+    // upadtes to the skipped counter seem to go in 10 batches
+    // (it doesn't update each time)
+
     public void stopBurst() {
         resetTimer();
         this.stopCameraPreview();
+
+        //TODO FIXME
+        // start preview fails after stopping and starting again
+        // after 10 skips it auto resets and works again
 
         //TODO FIXME check why this is called when stopping burst instead of app exiting
         this.close();

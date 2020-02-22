@@ -7,16 +7,16 @@ import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
-import android.view.SurfaceView;
 
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
@@ -36,6 +36,36 @@ public class Camera1Manager {
     private boolean previewStarted;
     private int consecutivePicSkips;
     private static final int MAX_SKIPS = 10;
+
+    private enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, OFF }
+    private BurstState myBurstState;
+
+    public boolean isBurstOn() {
+        return this.myBurstState != BurstState.OFF;
+    }
+
+    private enum CameraState { OPENED, RELEASED }
+    private CameraState myCameraState;
+
+    interface OnPicTakenCallBack {
+        void updateMainCameraTextViews();
+    }
+
+    OnPicTakenCallBack onPicTakenCallBack;
+
+    private Timer getTimer() {
+        return _timer;
+    }
+
+    private void resetTimer() {
+
+        if(_timer != null) {
+            _timer.cancel();
+        }
+        this._timer = new Timer();
+    }
+
+    private Timer _timer;
 
     public int getSkippedPicsCount() {
         return _skippedPicsCount;
@@ -74,22 +104,33 @@ public class Camera1Manager {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
             }
 
-
+            onPicTakenCallBack.updateMainCameraTextViews();
         }
     };
 
-    public Camera1Manager(Context context, Activity activity) {
+    public Camera1Manager(Context context, Activity activity, OnPicTakenCallBack onPicTakenCallBack) {
+
+        this.myBurstState = BurstState.OFF;
+
+        this.onPicTakenCallBack = onPicTakenCallBack;
         this.checkForCameraPermission(context, activity);
 
         this.defaultSurfaceTexture = new SurfaceTexture(10);
 
         resetCamera();
+        resetTimer();
     }
 
     public boolean startCameraPreview() {
 
+        this.myBurstState = BurstState.ON_PREVIEWING;
+
         if(this.camera == null) {
             this.camera = getCameraInstance();
+
+            if(this.camera != null) {
+                this.myCameraState = CameraState.OPENED;
+            }
         }
 
         try {
@@ -101,6 +142,7 @@ public class Camera1Manager {
         } catch (IOException e) {
             Log.e(TAG, e.toString());
             this.previewInitialized = false;
+            this.myBurstState = BurstState.ON_IDLE;
         }
 
         if(previewInitialized) {
@@ -113,6 +155,7 @@ public class Camera1Manager {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
                 this.previewStarted = false;
+                this.myBurstState = BurstState.ON_IDLE;
             }
         }
 
@@ -122,6 +165,7 @@ public class Camera1Manager {
     public boolean stopCameraPreview() {
         try {
             camera.stopPreview();
+            this.myBurstState = BurstState.ON_IDLE;
             return true;
         } catch (RuntimeException e) {
             Log.e(TAG, e.toString());
@@ -175,8 +219,49 @@ public class Camera1Manager {
         }
     }
 
+    public void startBurst() {
+
+        //TODO FIXME: check, commenting this because duplicated, we already call start preview before taking picture
+        //this.startCameraPreview();
+
+        this.onPicTakenCallBack.updateMainCameraTextViews();
+
+        //Set how long before to start calling the TimerTask (in milliseconds)
+        int delay = 0;
+
+        //Set the amount of time between each execution (in milliseconds)
+        int periodMillis = 700;
+
+        resetTimer();
+
+        //Set the schedule function and rate
+        getTimer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                //TODO check/wait for previous tick/run before proceeding with a new one
+                takeSinglePicture();
+            }
+        },delay,periodMillis);
+    }
+
+    public void stopBurst() {
+        resetTimer();
+        this.stopCameraPreview();
+
+        //TODO FIXME check why this is called when stopping burst instead of app exiting
+        this.close();
+        this.myBurstState = BurstState.OFF;
+        this.onPicTakenCallBack.updateMainCameraTextViews();
+    }
+
+    //TODO FIXME check why this is called when stopping burst instead of app exiting
     public void close() {
         releaseCameraAndPreview();
+        this.resetTimer();
+    }
+
+    private void takeSinglePicture() {
+        takePicture();
     }
 
     public static void onRequestPermissionsResult(int requestCode,
@@ -208,21 +293,26 @@ public class Camera1Manager {
 
         if(previewInitialized && previewStarted) {
             try {
+                this.myBurstState = BurstState.ON_PIC_PENDING;
                 camera.takePicture(null, null, null, jpegCallback);
                 this.consecutivePicSkips = 0;
             } catch (RuntimeException e) {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
+                this.myBurstState = BurstState.ON_IDLE;
                 this.incrementSkippedPicsCount();
                 this.consecutivePicSkips++;
 
                 //resetting the params in case that's why preview fails
                 setCameraParams();
-                startCameraPreview();
+
+                //Duplicate, we already start preview before taking picture
+                //startCameraPreview();
             }
         }
         else {
             Log.e(TAG, "Skipping take picture");
+            this.myBurstState = BurstState.ON_IDLE;
             this.incrementSkippedPicsCount();
             this.consecutivePicSkips++;
             setCameraParams();//resetting the params in case that's why preview fails
@@ -235,6 +325,7 @@ public class Camera1Manager {
         }
     }
 
+    @Deprecated
     private boolean safeCameraOpen(int id) {
         boolean qOpened = false;
 
@@ -257,12 +348,18 @@ public class Camera1Manager {
         if (camera != null) {
             camera.release();
             camera = null;
+            this.myCameraState = CameraState.RELEASED;
         }
     }
 
     private void resetCamera() {
         this.releaseCameraAndPreview();
         this.camera = getCameraInstance();
+
+        if(this.camera != null) {
+            this.myCameraState = CameraState.OPENED;
+        }
+
         this.previewInitialized = false;
         this.previewStarted = false;
         this.consecutivePicSkips = 0;
@@ -285,6 +382,7 @@ public class Camera1Manager {
     }
 
     /** Check if this device has a camera */
+    @Deprecated
     private boolean checkCameraHardware(Context context) {
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
             // this device has a camera
@@ -295,6 +393,7 @@ public class Camera1Manager {
         }
     }
 
+    @Deprecated
     private void checkCameraFeatures() {
 
         // get Camera parameters

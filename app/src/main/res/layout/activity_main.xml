@@ -25,19 +25,61 @@
 
         >
             <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <Button
-                    android:id="@+id/takePicBtn"
-                    android:textColor="@color/colorEletricBlue"
-                    android:background="@drawable/button_border"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="1dp"
-                    android:text="Start burst"
-                    >
-                </Button>
+                    android:orientation="horizontal">
+                    <Button
+                        android:id="@+id/takePicBtn"
+                        android:textColor="@color/colorEletricBlue"
+                        android:background="@drawable/button_border"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="1dp"
+                        android:text="Start burst"
+                        >
+                    </Button>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/photoCountTV"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingHorizontal="8dp"
+                                android:textColor="@color/colorEletricBlue"
+                                android:text="0">
+                            </TextView>
+                            <TextView
+                                android:id="@+id/skippedCountTV"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+
+                                android:textColor="@color/colorEletricBlue"
+                                android:text="Skipped: 0">
+                            </TextView>
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/itsOnTV"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:textColor="@color/colorEletricBlue"
+                            android:text="IT'S ON"
+                            >
+                        </TextView>
+                    </LinearLayout>
+
+                </LinearLayout>
+
                 <Button
                     android:id="@+id/stopBurstBtn"
                     android:textColor="@color/colorEletricBlue"
@@ -48,23 +90,9 @@
                     >
                 </Button>
             </LinearLayout>
-        <TextView
-            android:id="@+id/photoCountTV"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:textColor="@color/colorEletricBlue"
-            android:text="0">
-        </TextView>
-        <TextView
-            android:id="@+id/skippedCountTV"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:textColor="@color/colorEletricBlue"
-            android:text="Skipped: 0">
-        </TextView>
-    </LinearLayout>
+
+
+        </LinearLayout>
         <TextView
             android:id="@+id/pictureSizeTV"
             android:layout_width="wrap_content"

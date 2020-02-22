@@ -8,26 +8,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Camera1Manager.OnPicTakenCallBack {
 
     Camera1Manager cameraManager;
-
-    public Timer getTimer() {
-        return _timer;
-    }
-
-    public void resetTimer() {
-
-        if(_timer != null) {
-            _timer.cancel();
-        }
-        this._timer = new Timer();
-    }
-
-    Timer _timer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,9 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
         getSupportActionBar().hide();
 
-        this.cameraManager = new Camera1Manager(this, this);
-
-        resetTimer();
+        this.cameraManager = new Camera1Manager(this, this, this);
 
         Button takePicBtn = findViewById(R.id.takePicBtn);
         takePicBtn.setOnClickListener(new View.OnClickListener() {
@@ -70,10 +51,18 @@ public class MainActivity extends AppCompatActivity {
         outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
     }
 
+    private void startBurst() {
+        this.cameraManager.startBurst();
+    }
+
+    private void stopBurst() {
+        this.cameraManager.stopBurst();
+    }
+
     private void closeApp() {
 
         cameraManager.close();
-        this.resetTimer();
+
         //this.finishAndRemoveTask();
         this.finish();
 
@@ -83,47 +72,22 @@ public class MainActivity extends AppCompatActivity {
         //terminate app threads, not only activity
     }
 
-    private void updateMainCameraTextViews() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updatePicCountTV();
-                updateSkippedPicsCountTV();
-                updatePicSizeTV();
-            }
-        });
+    public void updateMainCameraTextViews() {
+        updatePicCountTV();
+        updateSkippedPicsCountTV();
+        updatePicSizeTV();
+        updateItsOn();
     }
 
-    private void startBurst() {
+    private void updateItsOn() {
+        TextView itsOnTV = findViewById(R.id.itsOnTV);
+        boolean isBurstOn = cameraManager.isBurstOn();
 
-        this.cameraManager.startCameraPreview();
-
-        //Set how long before to start calling the TimerTask (in milliseconds)
-        int delay = 0;
-
-        //Set the amount of time between each execution (in milliseconds)
-        int periodMillis = 700;
-
-        resetTimer();
-
-        //Set the schedule function and rate
-        getTimer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                  takeSinglePicture();
-            }
-        },delay,periodMillis);
-    }
-
-    private void stopBurst() {
-        resetTimer();
-        this.cameraManager.stopCameraPreview();
-        this.cameraManager.close();
-    }
-
-    private void takeSinglePicture() {
-        cameraManager.takePicture();
-        updateMainCameraTextViews();
+        if(isBurstOn) {
+            itsOnTV.setText("IT'S ON");
+        } else {
+            itsOnTV.setText("");
+        }
     }
 
     private void updatePicSizeTV() {

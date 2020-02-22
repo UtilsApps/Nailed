@@ -51,6 +51,13 @@ public class MainActivity extends AppCompatActivity implements Camera1Manager.On
         outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        updateMainCameraTextViews();
+    }
+
     private void startBurst() {
         this.cameraManager.startBurst();
     }

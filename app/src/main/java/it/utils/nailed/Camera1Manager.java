@@ -6,6 +6,9 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
@@ -18,6 +21,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static android.content.Context.VIBRATOR_SERVICE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
 //import static android.provider.Settings.System.getString;
@@ -46,6 +50,8 @@ public class Camera1Manager {
 
     private enum CameraState { OPENED, RELEASED }
     private CameraState myCameraState;
+
+    private Vibrator vibeHapticFeedback;
 
     interface OnPicTakenCallBack {
         void updateMainCameraTextViews();
@@ -98,6 +104,7 @@ public class Camera1Manager {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
                 fos.write(data);
                 fos.close();
+                hapticFeedBack();
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "File not found: " + e.getMessage());
             } catch (IOException e) {
@@ -108,12 +115,56 @@ public class Camera1Manager {
         }
     };
 
+    private void hapticFeedBack() {
+
+        if(this.vibeHapticFeedback != null
+                && this.vibeHapticFeedback.hasVibrator()) {
+
+            if(Build.VERSION.SDK_INT >= 26
+                    //&& this.vibeHapticFeedback.hasAmplitudeControl()
+            ){
+                VibrationEffect vibe;
+
+                try {
+                    if(Build.VERSION.SDK_INT >= 29) {
+                        vibe = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK);
+                    }
+                    else {
+                        //vibe = VibrationEffect.createOneShot(VibrationEffect.EFFECT_CLICK,
+                        //        VibrationEffect.DEFAULT_AMPLITUDE);
+
+                        vibe = VibrationEffect.createOneShot(20,
+                                50);
+                    }
+
+                    this.vibeHapticFeedback.vibrate(vibe);
+                } catch (Exception e) {
+                    //Log.e(TAG, "Unable to vibrate " + e.toString());
+                    defaultVibration();
+                }
+            } else {
+                defaultVibration();
+            }
+        }
+    }
+
+    private void defaultVibration() {
+        final int DEFAULT_VIBRATION_MILLIS = 20;
+
+        //this.vibeHapticFeedback.vibrate(VibrationEffect.EFFECT_CLICK);
+
+        this.vibeHapticFeedback.vibrate(DEFAULT_VIBRATION_MILLIS);
+    }
+
     public Camera1Manager(Context context, Activity activity, OnPicTakenCallBack onPicTakenCallBack) {
 
         this.myBurstState = BurstState.OFF;
 
         this.onPicTakenCallBack = onPicTakenCallBack;
         this.checkForCameraPermission(context, activity);
+
+
+        this.vibeHapticFeedback = ( Vibrator ) context.getSystemService( VIBRATOR_SERVICE );
 
         this.defaultSurfaceTexture = new SurfaceTexture(10);
 

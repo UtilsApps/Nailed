@@ -35,7 +35,7 @@ public class Camera1Manager {
 
     private Camera camera;
     //private SurfaceView preview;
-    private SurfaceTexture defaultSurfaceTexture;
+    private SurfaceTexture dummySurfaceTexture;
     private boolean previewInitialized;
     private boolean previewStarted;
     private int consecutivePicSkips;
@@ -48,7 +48,7 @@ public class Camera1Manager {
         return this.myBurstState != BurstState.OFF;
     }
 
-    private enum CameraState { OPENED, RELEASED }
+    private enum CameraState { OPENED_IDLE, PREVIEWING, RELEASED }
     private CameraState myCameraState;
 
     private Vibrator vibeHapticFeedback;
@@ -166,8 +166,6 @@ public class Camera1Manager {
 
         this.vibeHapticFeedback = ( Vibrator ) context.getSystemService( VIBRATOR_SERVICE );
 
-        this.defaultSurfaceTexture = new SurfaceTexture(10);
-
         resetCamera();
         resetTimer();
     }
@@ -180,7 +178,7 @@ public class Camera1Manager {
             this.camera = getCameraInstance();
 
             if(this.camera != null) {
-                this.myCameraState = CameraState.OPENED;
+                this.myCameraState = CameraState.OPENED_IDLE;
             }
         }
 
@@ -188,7 +186,7 @@ public class Camera1Manager {
             //You can't take a picture without a preview,
             // but you don't have to show the preview on screen.
             // You can direct the output to a SurfaceTexture instead (API 11+).
-            camera.setPreviewTexture(this.defaultSurfaceTexture);
+            camera.setPreviewTexture(this.dummySurfaceTexture);
             this.previewInitialized = true;
         } catch (IOException e) {
             Log.e(TAG, e.toString());
@@ -198,8 +196,13 @@ public class Camera1Manager {
 
         if(previewInitialized) {
             try {
-                camera.stopPreview();
+                if(this.myCameraState == CameraState.PREVIEWING) {
+                    camera.stopPreview();
+                }
+
                 camera.startPreview();
+                this.myCameraState = CameraState.PREVIEWING;
+
                 camera.setPreviewCallback(null);
                 this.previewStarted = true;
             } catch (RuntimeException e) {
@@ -216,6 +219,7 @@ public class Camera1Manager {
     public boolean stopCameraPreview() {
         try {
             camera.stopPreview();
+            this.myCameraState = CameraState.OPENED_IDLE;
             this.myBurstState = BurstState.ON_IDLE;
             return true;
         } catch (RuntimeException e) {
@@ -401,14 +405,19 @@ public class Camera1Manager {
             camera = null;
             this.myCameraState = CameraState.RELEASED;
         }
+
+        if(this.dummySurfaceTexture != null) {
+            this.dummySurfaceTexture.release();
+        }
     }
 
     private void resetCamera() {
         this.releaseCameraAndPreview();
-        this.camera = getCameraInstance();
+        this.dummySurfaceTexture = new SurfaceTexture(1);
 
+        this.camera = getCameraInstance();
         if(this.camera != null) {
-            this.myCameraState = CameraState.OPENED;
+            this.myCameraState = CameraState.OPENED_IDLE;
         }
 
         this.previewInitialized = false;

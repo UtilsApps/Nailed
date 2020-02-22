@@ -34,6 +34,8 @@ public class Camera1Manager {
     private SurfaceTexture defaultSurfaceTexture;
     private boolean previewInitialized;
     private boolean previewStarted;
+    private int consecutivePicSkips;
+    private static final int MAX_SKIPS = 10;
 
     public int getSkippedPicsCount() {
         return _skippedPicsCount;
@@ -81,14 +83,7 @@ public class Camera1Manager {
 
         this.defaultSurfaceTexture = new SurfaceTexture(10);
 
-        if(this.camera == null) {
-            this.camera = getCameraInstance();
-        }
-
-        this.previewInitialized = false;
-        this.previewStarted = false;
-
-        setCameraParams();
+        resetCamera();
     }
 
     public boolean startCameraPreview() {
@@ -214,10 +209,12 @@ public class Camera1Manager {
         if(previewInitialized && previewStarted) {
             try {
                 camera.takePicture(null, null, null, jpegCallback);
+                this.consecutivePicSkips = 0;
             } catch (RuntimeException e) {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
                 this.incrementSkippedPicsCount();
+                this.consecutivePicSkips++;
 
                 //resetting the params in case that's why preview fails
                 setCameraParams();
@@ -227,7 +224,14 @@ public class Camera1Manager {
         else {
             Log.e(TAG, "Skipping take picture");
             this.incrementSkippedPicsCount();
+            this.consecutivePicSkips++;
             setCameraParams();//resetting the params in case that's why preview fails
+        }
+
+        if(this.consecutivePicSkips >= MAX_SKIPS) {
+            Log.e(TAG, "Too many consecutive skips ("
+                    + this.consecutivePicSkips + "), resetting camera..");
+            this.resetCamera();
         }
     }
 
@@ -259,13 +263,17 @@ public class Camera1Manager {
     private void resetCamera() {
         this.releaseCameraAndPreview();
         this.camera = getCameraInstance();
+        this.previewInitialized = false;
+        this.previewStarted = false;
+        this.consecutivePicSkips = 0;
+
+        setCameraParams();
     }
 
     /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance() {
         Camera c = null;
         try {
-
             c = Camera.open(); // attempt to get a Camera instance
         }
         catch (Exception e){

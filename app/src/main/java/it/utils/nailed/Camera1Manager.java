@@ -2,13 +2,17 @@ package it.utils.nailed;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
@@ -17,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -33,6 +38,7 @@ public class Camera1Manager {
     static final String TAG = "Camera1Manager";
     public static final int MY_PERMISSIONS_REQUESTS = 400;
 
+    private Context context;
     private Camera camera;
     //private SurfaceView preview;
     private SurfaceTexture dummySurfaceTexture;
@@ -92,24 +98,66 @@ public class Camera1Manager {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
+            // we save the picture file here
+
             myBurstState = BurstState.SAVING;
             Log.d(TAG, "onPictureTaken");
 
-            File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
-            if (pictureFile == null){
-                Log.d(TAG, "Error creating media file, check storage permissions");
-                return;
-            }
+            if(Build.VERSION.SDK_INT < 29) {
+                File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
+                if (pictureFile == null){
+                    Log.d(TAG, "Error creating media file, check storage permissions");
+                    return;
+                }
 
-            try {
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
-                fos.close();
-                hapticFeedBack();
-            } catch (FileNotFoundException e) {
-                Log.d(TAG, "File not found: " + e.getMessage());
-            } catch (IOException e) {
-                Log.d(TAG, "Error accessing file: " + e.getMessage());
+                try {
+                    FileOutputStream fos = new FileOutputStream(pictureFile);
+                    fos.write(data);
+                    fos.close();
+                    hapticFeedBack();
+                } catch (FileNotFoundException e) {
+                    Log.d(TAG, "File not found: " + e.getMessage());
+                } catch (IOException e) {
+                    Log.d(TAG, "Error accessing file: " + e.getMessage());
+                }
+            }
+            else {
+                // Android 10 and above
+
+                // Add a specific media item.
+                ContentResolver resolver = context.getContentResolver();
+
+                // Find all image files on the primary external storage device.
+                Uri imageCollection = MediaStore.Images.Media.getContentUri(
+                        MediaStore.VOLUME_EXTERNAL_PRIMARY);
+
+                // Publish a new picture/image
+                ContentValues newImageDetails = new ContentValues();
+                String pictureFileName = ImageSaver.getOutputMediaFileName(MEDIA_TYPE_IMAGE);
+                newImageDetails.put(MediaStore.Images.Media.DISPLAY_NAME, pictureFileName);
+                newImageDetails.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                String dirName = "Pictures/" + ImageSaver.getDirNameByTodayDate();
+                newImageDetails.put(MediaStore.Images.Media.RELATIVE_PATH, dirName);
+                newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 1);
+
+                // Keeps a handle to the new image's URI in case we need to modify it later.
+                Uri newImageUri = resolver.insert(imageCollection, newImageDetails);
+
+                try(OutputStream os = resolver.openOutputStream(newImageUri)) {
+                    os.write(data);
+                    os.close();
+                    hapticFeedBack();
+                } catch (FileNotFoundException e) {
+                    Log.e(TAG, "File not found to save image: " + newImageUri.toString());
+                } catch (IOException e) {
+                    Log.e(TAG, "Error while trying to open file to save image" + e.toString());
+                }
+
+                //bmp.compress(Bitmap.CompressFormat.JPEG, 90, out)
+
+                newImageDetails.clear();
+                newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 0);
+                resolver.update(newImageUri, newImageDetails, null, null);
             }
 
             //TODO FIXME: is preview usually still open after a picture has been taken?
@@ -159,8 +207,10 @@ public class Camera1Manager {
         this.vibeHapticFeedback.vibrate(DEFAULT_VIBRATION_MILLIS);
     }
 
-    public Camera1Manager(Context context, Activity activity, OnPicTakenCallBack onPicTakenCallBack) {
+    public Camera1Manager(Context context, Activity activity,
+                          OnPicTakenCallBack onPicTakenCallBack) {
 
+        this.context = context;
         this.myBurstState = BurstState.OFF;
 
         this.onPicTakenCallBack = onPicTakenCallBack;
@@ -200,6 +250,9 @@ public class Camera1Manager {
         if(previewInitialized) {
             try {
                 if(this.myCameraState == CameraState.PREVIEWING) {
+                    if(camera == null) {
+                        Log.e(TAG, "camera is null after previewInitialized");
+                    }
                     camera.stopPreview();
                 }
 
@@ -221,6 +274,9 @@ public class Camera1Manager {
 
     public boolean stopCameraPreview() {
         try {
+            if(camera == null) {
+                Log.e(TAG, "camera is null before stopping preview");
+            }
             camera.stopPreview();
             this.myCameraState = CameraState.OPENED_IDLE;
             this.myBurstState = BurstState.ON_IDLE;
@@ -449,6 +505,7 @@ public class Camera1Manager {
         Camera c = null;
         try {
             c = Camera.open(); // attempt to get a Camera instance
+            Log.d(TAG, "Successfully obtained Camera instance: " + c.toString());
         }
         catch (Exception e){
             // Camera is not available (in use or does not exist)

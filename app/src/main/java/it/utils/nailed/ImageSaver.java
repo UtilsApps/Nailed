@@ -1,6 +1,7 @@
 package it.utils.nailed;
 
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 
@@ -28,20 +29,28 @@ public class ImageSaver {
     };
 
     static {
-        if(Environment.isExternalStorageEmulated ()) {
-            mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_PICTURES);
+
+        if(Build.VERSION.SDK_INT >= 29) {
+            mediaStorageMainDir = null;
+            //mediaStorageMainDir = MediaStore.Images.Media.RELATIVE_PATH
+            // + Environment.DIRECTORY_PICTURES
         }
         else {
-            mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_PICTURES);
+            if(Environment.isExternalStorageEmulated ()) {
+                mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES);
+            }
+            else {
+                mediaStorageMainDir = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES);
+            }
         }
     }
 
     /** Create a file Uri for saving an image or video */
-    private static Uri getOutputMediaFileUri(int type){
+    /*private static Uri getOutputMediaFileUri(int type){
         return Uri.fromFile(getOutputMediaFile(type));
-    }
+    }*/
 
     private static File getMainOutputMediaDir() {
 
@@ -58,6 +67,13 @@ public class ImageSaver {
         }
 
         return mediaStorageSubDir;
+    }
+
+    public static String getDirNameByTodayDate() {
+        String fullDatePattern = "yyyy.MM.dd";
+        String timeStamp = new SimpleDateFormat(fullDatePattern).format(new Date());
+
+        return timeStamp;
     }
 
     //TODO needs tests
@@ -96,22 +112,24 @@ public class ImageSaver {
         }
 
         File[] timeSubDirs = daySubDir.listFiles(DIRS_ONLY_FILTER);
-        boolean hasTimeSubDirs = timeSubDirs.length > 0;
+        if(timeSubDirs != null) {
+            boolean hasTimeSubDirs = timeSubDirs.length > 0;
 
-        if(hasTimeSubDirs) {
-            Arrays.sort(timeSubDirs);
-            int lastIdx = timeSubDirs.length - 1;
-            File lastTimeSubDir = timeSubDirs[lastIdx];
-            bottomDir = lastTimeSubDir;
+            if(hasTimeSubDirs) {
+                Arrays.sort(timeSubDirs);
+                int lastIdx = timeSubDirs.length - 1;
+                File lastTimeSubDir = timeSubDirs[lastIdx];
+                bottomDir = lastTimeSubDir;
 
-            if(isExceedingFileCount(lastTimeSubDir)) {
+                if(isExceedingFileCount(lastTimeSubDir)) {
 
-                Log.i(TAG, "Time subdir is has more than " + FILE_COUNT_LIMIT + " files");
+                    Log.i(TAG, "Time subdir is has more than " + FILE_COUNT_LIMIT + " files");
 
-                File nextTimeStampSubDir = getNextTimeStampSubDir(daySubDir);
-                bottomDir = nextTimeStampSubDir;
-                createIfNotExists(bottomDir);
-                Log.i(TAG, "New bottom dir: " + bottomDir.toString());
+                    File nextTimeStampSubDir = getNextTimeStampSubDir(daySubDir);
+                    bottomDir = nextTimeStampSubDir;
+                    createIfNotExists(bottomDir);
+                    Log.i(TAG, "New bottom dir: " + bottomDir.toString());
+                }
             }
         }
 
@@ -132,7 +150,15 @@ public class ImageSaver {
 
     public static boolean isExceedingFileCount(File dir) {
 
-        return dir.listFiles().length >= FILE_COUNT_LIMIT;
+        File[] listFiles = dir.listFiles();
+
+        if(listFiles == null) {
+            //TODO see why this happens in android 10
+            return false;
+        }
+        else {
+            return listFiles.length >= FILE_COUNT_LIMIT;
+        }
     }
 
     private static File getTimeStampSubDir(File parentDir, String datePattern, boolean create) {
@@ -165,21 +191,32 @@ public class ImageSaver {
 
         File mediaStorageDir = getOutputMediaDirDaySpecific();
 
-        final String fileNamePattern = "yyyy.MM.dd_'h'HH.mm.ss";
+        // Create a media file name
 
-                // Create a media file name
-        String timeStamp = new SimpleDateFormat(fileNamePattern).format(new Date());
-        File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE){
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
-        } else if(type == MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
-        } else {
-            return null;
-        }
+        File mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                getOutputMediaFileName(type));
 
         return mediaFile;
+    }
+
+    public static String getOutputMediaFileName(int type){
+
+        final String fileNamePattern = "yyyy.MM.dd_'h'HH.mm.ss";
+        String timeStamp = new SimpleDateFormat(fileNamePattern).format(new Date());
+
+        String fileNamePrefix = "";
+        String fileNameExtension = "";
+        String fileName;
+        if (type == MEDIA_TYPE_IMAGE){
+            fileNamePrefix = "IMG_";
+            fileNameExtension = ".jpg";
+        } else if(type == MEDIA_TYPE_VIDEO) {
+            fileNamePrefix = "VID_";
+            fileNameExtension = ".mp4";
+        }
+
+        fileName = fileNamePrefix + timeStamp + fileNameExtension;
+
+        return fileName;
     }
 }

@@ -10,15 +10,15 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.renderscript.ScriptGroup;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity
         implements Camera1Manager.OnPicTakenCallBack {
+
+    static String TAG = "MainActivity";
 
     Camera1Manager cameraManager;
 
@@ -75,14 +75,24 @@ public class MainActivity extends AppCompatActivity
 
     private void startBurst() {
         this.cameraManager.startBurst();
+
+        if(mBoundToService) {
+            //TODO call service method to start loop
+            // check here on in the service that the loop is not already started
+        }
     }
 
     private void stopBurst() {
         this.cameraManager.stopBurst();
+
+        if(mBoundToService) {
+            //TODO call service method to stop loop
+        }
     }
 
     private void closeApp() {
 
+        stopBurst();
         cameraManager.close();
 
         //this.finishAndRemoveTask();
@@ -150,7 +160,7 @@ public class MainActivity extends AppCompatActivity
 
     private int getCurrentImageDirCount() {
 
-        if(Build.VERSION.SDK_INT >= 29) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             //TODO FIXME implement this for Android 10
             return 0;
         } else {
@@ -172,6 +182,21 @@ public class MainActivity extends AppCompatActivity
     //TODO
     // Binding to PhotoBurstService
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Bind to LocalService
+        Intent intent = new Intent(this, PhotoBurstService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(mConnection);
+        mBoundToService = false;
+    }
+
     // Don't attempt to unbind from the service unless the client has received some
     // information about the service's state.
     private boolean mShouldUnbind;
@@ -179,6 +204,7 @@ public class MainActivity extends AppCompatActivity
     // To invoke the bound service, first make sure that this value
     // is not null.
     private PhotoBurstService mBoundService;
+    private boolean mBoundToService = false;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -187,7 +213,12 @@ public class MainActivity extends AppCompatActivity
             // interact with the service.  Because we have bound to a explicit
             // service that we know is running in our own process, we can
             // cast its IBinder to a concrete class and directly access it.
-            mBoundService = ((PhotoBurstService.LocalBinder)service).getService();
+            //mBoundService = ((PhotoBurstService.LocalBinder)service).getService();
+
+            Log.e(TAG, "onServiceConnected, PhotoBurstService");
+            PhotoBurstService.LocalBinder binder = (PhotoBurstService.LocalBinder) service;
+            mBoundService = binder.getService();
+            mBoundToService = true;
 
             // Tell the user about this for our demo.
             /*Toast.makeText(MainActivity.this, R.string.local_service_connected,
@@ -199,7 +230,13 @@ public class MainActivity extends AppCompatActivity
             // unexpectedly disconnected -- that is, its process crashed.
             // Because it is running in our same process, we should never
             // see this happen.
+            Log.e(TAG, "onServiceDisconnected, PhotoBurstService");
             mBoundService = null;
+            mBoundToService = false;
+
+            //TODO: try to reconnect
+            // if burst it's on, call service method to resume burst
+
             /*Toast.makeText(MainActivity.this, R.string.local_service_disconnected,
                     Toast.LENGTH_SHORT).show();*/
         }

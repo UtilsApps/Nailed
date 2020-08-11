@@ -30,7 +30,7 @@ public class ImageSaver {
 
     static {
 
-        if(Build.VERSION.SDK_INT >= 29) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             mediaStorageMainDir = null;
             //mediaStorageMainDir = MediaStore.Images.Media.RELATIVE_PATH
             // + Environment.DIRECTORY_PICTURES

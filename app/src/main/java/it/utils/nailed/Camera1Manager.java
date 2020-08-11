@@ -103,7 +103,7 @@ public class Camera1Manager {
             myBurstState = BurstState.SAVING;
             Log.d(TAG, "onPictureTaken");
 
-            if(Build.VERSION.SDK_INT < 29) {
+            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
                 if (pictureFile == null){
                     Log.d(TAG, "Error creating media file, check storage permissions");
@@ -171,13 +171,13 @@ public class Camera1Manager {
         if(this.vibeHapticFeedback != null
                 && this.vibeHapticFeedback.hasVibrator()) {
 
-            if(Build.VERSION.SDK_INT >= 26
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                     //&& this.vibeHapticFeedback.hasAmplitudeControl()
             ){
                 VibrationEffect vibe;
 
                 try {
-                    if(Build.VERSION.SDK_INT >= 29) {
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         vibe = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK);
                     }
                     else {

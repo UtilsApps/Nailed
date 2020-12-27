@@ -17,6 +17,15 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
+
+    /*
+    * TODO
+    * add test checking for active service/threads/timers
+    * check there is online one service/timer at any given time
+    * even if start burst clicked repeatedly
+    * even if app quits and is started again, or started multiple times without closing it
+    * */
+
     @Test
     public void useAppContext() {
         // Context of the app under test.

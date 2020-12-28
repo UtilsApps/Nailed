@@ -30,4 +30,23 @@ public class PhotoBurstService extends Service {
         // throw new IllegalAccessException("Not yet implemented");
         return 0;
     }
+
+    //TODO count average time of last n (n=7) pictures taken
+    // save the timestamp of last n (n=7) pictures taken
+    // before taking each picture, check that previous one was at least x seconds ago
+    // (with x = setting of delay between pictures)
+    // if less, wait x - elapsed time since last picture
+
+    public void startBurst() {
+        // throw new IllegalAccessException("Not yet implemented");
+    }
+
+    public void stopBurst() {
+        // throw new IllegalAccessException("Not yet implemented");
+    }
+
+    public boolean isBurstOn() throws IllegalAccessException {
+        throw new IllegalAccessException("Not yet implemented");
+        //return false;
+    }
 }

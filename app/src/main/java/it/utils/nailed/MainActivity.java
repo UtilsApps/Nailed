@@ -32,8 +32,9 @@ public class MainActivity extends AppCompatActivity
 
         getSupportActionBar().hide();
 
-        //replace cameraManager with service, which calls it
-        //pass parameters to service on pic res etc
+        //TODO
+        // replace cameraManager with service, which calls it
+        // pass parameters to service on pic res etc
         this.cameraManager = new Camera1Manager(this, this, this);
 
         Button takePicBtn = findViewById(R.id.takePicBtn);
@@ -78,7 +79,7 @@ public class MainActivity extends AppCompatActivity
 
         if(mBoundToService) {
             //TODO call service method to start loop
-            // check here on in the service that the loop is not already started
+            // check here oR in the service that the loop is not already started
         }
     }
 
@@ -210,10 +211,11 @@ public class MainActivity extends AppCompatActivity
         public void onServiceConnected(ComponentName className, IBinder service) {
             // This is called when the connection with the service has been
             // established, giving us the service object we can use to
-            // interact with the service.  Because we have bound to a explicit
+            // interact with the service.
+            // Because we have bound to a explicit
             // service that we know is running in our own process, we can
             // cast its IBinder to a concrete class and directly access it.
-            //mBoundService = ((PhotoBurstService.LocalBinder)service).getService();
+            // mBoundService = ((PhotoBurstService.LocalBinder)service).getService();
 
             Log.e(TAG, "onServiceConnected, PhotoBurstService");
             PhotoBurstService.LocalBinder binder = (PhotoBurstService.LocalBinder) service;
@@ -287,6 +289,16 @@ public class MainActivity extends AppCompatActivity
 
         //startForegroundService()
     }
+
+    //TODO
+    // the picture taking (camera), and saving should be done in a separate thread
+    // (since the service runs on the main thread)
+
+    // Foreground services must display a Notification. 
+
+    //TODO
+    // check if service is running (regardless if burst on or off)
+    // it should always be running
 
     //TODO
     // query service for status, info

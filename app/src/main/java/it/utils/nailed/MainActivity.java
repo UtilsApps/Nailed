@@ -2,6 +2,8 @@ package it.utils.nailed;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -21,6 +23,7 @@ public class MainActivity extends AppCompatActivity
     static String TAG = "MainActivity";
 
     Camera1Manager cameraManager;
+    public static MainActivity activity;
 
     //TODO at startup should query if service is already running
     private enum BurstState { BURST_ON, BURST_OFF }
@@ -28,6 +31,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        MainActivity.activity = this;
         setContentView(R.layout.activity_main);
 
         getSupportActionBar().hide();
@@ -75,19 +79,27 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startBurst() {
-        this.cameraManager.startBurst();
+        //TODO FIXME refactor and move code to BurstService
+        //this.cameraManager.startBurst();
 
         if(mBoundToService) {
             //TODO call service method to start loop
             // check here oR in the service that the loop is not already started
+            //mBoundService.startForeground();
+            startPhotoBurstService();
+        } else {
+            //should try to bind the service, then start it
         }
     }
 
     private void stopBurst() {
-        this.cameraManager.stopBurst();
+        //TODO FIXME refactor and move code to BurstService
+        //this.cameraManager.stopBurst();
 
         if(mBoundToService) {
             //TODO call service method to stop loop
+            //mBoundService.stopForeground(true);
+            stopPhotoBurstService();
         }
     }
 
@@ -114,7 +126,11 @@ public class MainActivity extends AppCompatActivity
 
     private void updateItsOn() {
         TextView itsOnTV = findViewById(R.id.itsOnTV);
-        boolean isBurstOn = cameraManager.isBurstOn();
+        boolean isBurstOn = false;
+
+        if(mBoundToService && mBoundService.isBurstOn()) {
+            isBurstOn = true;
+        }
 
         if(isBurstOn) {
             itsOnTV.setText("IT'S ON");
@@ -188,12 +204,16 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
         // Bind to LocalService
         Intent intent = new Intent(this, PhotoBurstService.class);
+        //binds to the service, creating it if necessary
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+
+        //TODO check for foreground service, keeping it active even when activity goes into the backgroud
+        // review activity lifecycle, background status
         unbindService(mConnection);
         mBoundToService = false;
     }
@@ -208,6 +228,9 @@ public class MainActivity extends AppCompatActivity
     private boolean mBoundToService = false;
 
     private ServiceConnection mConnection = new ServiceConnection() {
+
+
+
         public void onServiceConnected(ComponentName className, IBinder service) {
             // This is called when the connection with the service has been
             // established, giving us the service object we can use to
@@ -221,7 +244,6 @@ public class MainActivity extends AppCompatActivity
             PhotoBurstService.LocalBinder binder = (PhotoBurstService.LocalBinder) service;
             mBoundService = binder.getService();
             mBoundToService = true;
-
             // Tell the user about this for our demo.
             /*Toast.makeText(MainActivity.this, R.string.local_service_connected,
                     Toast.LENGTH_SHORT).show();*/
@@ -276,25 +298,24 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startPhotoBurstService() {
-        //<service android:name="com.example.ServiceName"></service>
+        //<service android:name=".PhotoBurstService" />
+
+        // TODO fix, check
+        // bindService creates the service, but does it start it?
         Intent serviceIntent = new Intent(this, PhotoBurstService.class);
         startService(serviceIntent);
-
-        //startForegroundService()
     }
 
     private void stopPhotoBurstService() {
         Intent serviceIntent = new Intent(this, PhotoBurstService.class);
         stopService(serviceIntent);
-
-        //startForegroundService()
     }
 
     //TODO
     // the picture taking (camera), and saving should be done in a separate thread
     // (since the service runs on the main thread)
 
-    // Foreground services must display a Notification. 
+    // Foreground services must display a Notification.
 
     //TODO
     // check if service is running (regardless if burst on or off)

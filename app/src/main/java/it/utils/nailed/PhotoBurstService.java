@@ -1,14 +1,119 @@
 package it.utils.nailed;
 
+import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
+import android.widget.Toast;
 
 public class PhotoBurstService extends Service {
 
+    static String TAG = "PhotoBurstService";
+    private static int FOREGROUND_ID=11235;
+    private static final String CHANNEL_DEFAULT_IMPORTANCE = "Running";
+    private static final int ONGOING_NOTIFICATION_ID = 1;
+
     // Binder given to clients
     private final IBinder binder = new LocalBinder();
+
+    private Looper serviceLooper;
+    private BurstServiceHandler serviceHandler;
+    private MainActivity mainActivity;
+
+    // Handler that receives messages from the thread
+    private final class BurstServiceHandler extends Handler {
+
+        Camera1Manager cameraManager;
+
+        //This must be called before handlemessage
+        public void setCameraManager(Camera1Manager cameraManager) {
+            this.cameraManager = cameraManager;
+            Log.i(TAG, "Camera manager set into service handler");
+        }
+
+        public BurstServiceHandler(Looper looper) {
+            super(looper);
+        }
+        @Override
+        public void handleMessage(Message msg) {
+
+            //TODO rewrite to take pictures
+            // probaby no message needed as input;
+            // but we should return last picture taken timestamp
+
+            // Normally we would do some work here, like download a file.
+            // For our sample, we just sleep for 5 seconds.
+
+            if(this.cameraManager != null) {
+                this.cameraManager.startBurst();
+            }
+            else {
+                //FIXME
+                // this shouldn't happen
+                Log.e(TAG, "Null camera");
+            }
+
+            /*try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                // Restore interrupt status.
+                Thread.currentThread().interrupt();
+            }*/
+            // Stop the service using the startId, so that we don't stop
+            // the service in the middle of handling another job
+            stopSelf(msg.arg1);
+        }
+    }
+
+    @Override
+    public void onCreate() {
+        // Start up the thread running the service. Note that we create a
+        // separate thread because the service normally runs in the process's
+        // main thread, which we don't want to block. We also make it
+        // background priority so CPU-intensive work doesn't disrupt our UI.
+        HandlerThread thread = new HandlerThread("ServiceStartArguments",
+                android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        thread.start();
+
+        // Get the HandlerThread's Looper and use it for our Handler
+        serviceLooper = thread.getLooper();
+        serviceHandler = new BurstServiceHandler(serviceLooper);
+        Log.i(TAG, "Service created");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "service starting");
+        this.mainActivity = MainActivity.activity;
+
+        //TODO
+        // get camera manager and pass it to serviceHandler
+        Log.i(TAG, "Creating camera manager..");
+        Camera1Manager cameraManager = new Camera1Manager(this,
+                this.mainActivity,
+                this.mainActivity);
+        Log.i(TAG, "Camera manager should be created: " + cameraManager.toString());
+        this.serviceHandler.setCameraManager(cameraManager);
+
+        // For each start request, send a message to start a job and deliver the
+        // start ID so we know which request we're stopping when we finish the job
+        Message msg = serviceHandler.obtainMessage();
+        msg.arg1 = startId;
+        serviceHandler.sendMessage(msg);
+
+        // If we get killed, after returning from here, restart
+        return START_STICKY;
+    }
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -26,6 +131,10 @@ public class PhotoBurstService extends Service {
         return binder;
     }
 
+    public void passMainActivity(MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
+    }
+
     public int getCount() {
         // throw new IllegalAccessException("Not yet implemented");
         return 0;
@@ -39,14 +148,51 @@ public class PhotoBurstService extends Service {
 
     public void startBurst() {
         // throw new IllegalAccessException("Not yet implemented");
+        requestRunInForeground();
     }
 
     public void stopBurst() {
+        //TODO: actually stop taking pictures
+
         // throw new IllegalAccessException("Not yet implemented");
+        stopForeground(true);
     }
 
-    public boolean isBurstOn() throws IllegalAccessException {
-        throw new IllegalAccessException("Not yet implemented");
-        //return false;
+    public boolean isBurstOn() {
+        //TODO FIXME
+        //throw new IllegalAccessException("Not yet implemented");
+        return false;
+    }
+
+    private void requestRunInForeground() {
+        Intent notificationIntent = new Intent(this, PhotoBurstService.class);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        //if API >= 26
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification notification =
+                    new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
+                            .setContentTitle(getText(R.string.notification_title))
+                            .setContentText(getText(R.string.notification_message))
+                            .setSmallIcon(R.drawable.ic_launcher_foreground)
+                            .setContentIntent(pendingIntent)
+                            .setTicker(getText(R.string.ticker_text))
+                            .build();
+
+            // Notification ID cannot be 0.
+            startForeground(ONGOING_NOTIFICATION_ID, notification);
+        }
+        else { //if API <= 25
+            Notification notification =
+                    new Notification.Builder(this)
+                            .setContentTitle("Burst")
+                            .setContentText("ON")
+                            .setSmallIcon(R.drawable.ic_launcher_foreground)
+                            //.setLargeIcon(aBitmap)
+                            .build();
+
+            startForeground(ONGOING_NOTIFICATION_ID, notification);
+        }
     }
 }

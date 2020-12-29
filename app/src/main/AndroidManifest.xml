@@ -8,8 +8,8 @@
     <uses-feature android:name="android.hardware.flash" />
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:allowBackup="true"
@@ -25,6 +25,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
-</manifest>
+       <service android:name=".PhotoBurstService" />
+        <!--Android 11: android:foregroundServiceType="camera"-->
+        <!--Don't use in Android 11, restrictions on camera while on background-->
+
+     </application>
+
+ </manifest>

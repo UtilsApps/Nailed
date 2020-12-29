@@ -338,7 +338,9 @@ public class Camera1Manager {
         //TODO FIXME: check, commenting this because duplicated, we already call start preview before taking picture
         //this.startCameraPreview();
 
-        this.onPicTakenCallBack.updateMainCameraTextViews();
+        //TODO FIXME refactor this: store getCurrentImageDirCount into the service,
+        // then it's up to the main activity to retrieve the info
+        //this.onPicTakenCallBack.updateMainCameraTextViews();
 
         //Set how long before to start calling the TimerTask (in milliseconds)
         int delay = 0;

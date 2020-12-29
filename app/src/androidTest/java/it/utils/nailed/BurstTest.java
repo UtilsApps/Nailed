@@ -62,5 +62,9 @@ public class BurstTest {
                 .inAdapterView(withContentDescription("Credits list"))
                 .atPosition(3)
                 .perform(click());*/
+
+        //TODO test for error (happens in android 11 when denied access to camera):
+        // Foreground service started from background can not have \
+        // location/camera/microphone access: service SERVICE_NAME
     }
 }

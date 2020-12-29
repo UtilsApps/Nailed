@@ -169,4 +169,12 @@ public class BurstTest {
         // Foreground service started from background can not have \
         // location/camera/microphone access: service SERVICE_NAME
     }
+
+    @Test
+    public void testDeleyBtwPictures() {
+
+        // delay of last n pictures >= delay setting
+        // not too big than delay setting (1.2 times max?)
+
+    }
 }

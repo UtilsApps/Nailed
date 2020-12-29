@@ -46,6 +46,10 @@ public class Camera1Manager {
     private boolean previewStarted;
     private int consecutivePicSkips;
     private static final int MAX_SKIPS = 10;
+    private boolean burstShouldStop;
+    private enum BurstType { TIMER_BASED, THREAD_SLEEP_BASED};
+    private static final BurstType DEFAULT_BURST_TYPE = BurstType.THREAD_SLEEP_BASED;
+    private BurstType myBurstType;
 
     private enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, SAVING, OFF }
     private BurstState myBurstState;
@@ -209,19 +213,29 @@ public class Camera1Manager {
     }
 
     public Camera1Manager(Context context, Activity activity,
-                          OnPicTakenCallBack onPicTakenCallBack) {
+                          OnPicTakenCallBack onPicTakenCallBack, BurstType burstType) {
+        this.myBurstType = burstType;
 
         this.context = context;
         this.myBurstState = BurstState.OFF;
 
+        if(this.myBurstType == BurstType.THREAD_SLEEP_BASED) {
+            this.burstShouldStop = false;
+        }
+
         this.onPicTakenCallBack = onPicTakenCallBack;
         this.checkForCameraPermission(context, activity);
-
 
         this.vibeHapticFeedback = ( Vibrator ) context.getSystemService( VIBRATOR_SERVICE );
 
         resetCamera();
         resetTimer();
+    }
+
+    public Camera1Manager(Context context, Activity activity,
+                          OnPicTakenCallBack onPicTakenCallBack) {
+
+        this(context, activity, onPicTakenCallBack, DEFAULT_BURST_TYPE);
     }
 
     public boolean startCameraPreview() {
@@ -335,6 +349,68 @@ public class Camera1Manager {
     }
 
     public void startBurst() {
+        //Set the amount of time between each execution (in milliseconds)
+        int periodMillis = 700;
+
+        if(this.myBurstType == BurstType.THREAD_SLEEP_BASED) {
+            this.burstShouldStop = false;
+            doSleepBasedBurst(periodMillis);
+        }
+        else {
+            startTimerBasedBurst(periodMillis);
+        }
+    }
+
+    void doSleepBasedBurst(int periodMillis) {
+
+        while(!this.burstShouldStop) {
+            // loop (while until not stopped, thread stop):
+            // take timestamp
+            Long tsBegin, tsEnd;
+            tsBegin = System.currentTimeMillis();
+            // take pic
+            if (myBurstState != BurstState.ON_PIC_PENDING) {
+                takeSinglePicture();
+                // thread sleep period-elapsed time
+                tsEnd = System.currentTimeMillis();
+                Long elapsedTIme = tsEnd - tsBegin;
+                Log.d(TAG, "Pic taken, elapsed time: " + elapsedTIme);
+                Long remainingMillis = periodMillis - elapsedTIme;
+                if(remainingMillis > 0) {
+                    Log.d(TAG, "Sleeping " + remainingMillis + " millis..");
+                    try {
+                        Thread.sleep(remainingMillis);
+                    }
+                    catch (InterruptedException e) {
+                        Log.e(TAG, "Thread interruped while bursting.");
+                        return;
+                    }
+                }
+            }
+            else {
+                //TODO FIXME
+                // this happens too often, add tests for use of pending state
+                // test if we are still on main thread, because warning about that gets logged
+                Log.w(TAG, "Pic pending, sleeping 100 millis");
+                try {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException e) {
+                    Log.e(TAG, "Thread interruped while bursting.");
+                    return;
+                }
+            }
+
+        }
+
+        //thread quit
+        //Thread.currentThread().stop();
+
+        //Test: check which thread this is, which thread is the main activity,
+        // and which the service
+    }
+
+    void startTimerBasedBurst(int periodMillis) {
 
         //TODO FIXME: check, commenting this because duplicated, we already call start preview before taking picture
         //this.startCameraPreview();
@@ -345,9 +421,6 @@ public class Camera1Manager {
 
         //Set how long before to start calling the TimerTask (in milliseconds)
         int delay = 0;
-
-        //Set the amount of time between each execution (in milliseconds)
-        int periodMillis = 700;
 
         resetTimer();
 
@@ -372,7 +445,14 @@ public class Camera1Manager {
     // (it doesn't update each time)
 
     public void stopBurst() {
-        resetTimer();
+
+        if(this.myBurstType == BurstType.THREAD_SLEEP_BASED) {
+            this.burstShouldStop = true;
+        }
+        else {
+            resetTimer();
+        }
+
         this.stopCameraPreview();
 
         //TODO FIXME

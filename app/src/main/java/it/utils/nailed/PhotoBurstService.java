@@ -52,7 +52,9 @@ public class PhotoBurstService extends Service {
         }
 
         public void stopBurst() {
-            this.cameraManager.stopBurst();
+            if(this.cameraManager != null) {
+                this.cameraManager.stopBurst();
+            }
         }
 
         @Override

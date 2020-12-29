@@ -139,6 +139,7 @@ public class BurstTest {
         service.stopBurst();
         service.stopForeground(true);
         service.stopSelf();
+        //TODO FIXME maybe unbind the activty to make sure the service stops?
         assertEquals(false, isMyServiceRunning(PhotoBurstService.class));
     }
 

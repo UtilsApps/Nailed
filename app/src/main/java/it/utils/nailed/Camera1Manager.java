@@ -73,11 +73,12 @@ public class Camera1Manager {
 
         if(_timer != null) {
             _timer.cancel();
+            _timer.purge();
         }
         this._timer = new Timer();
     }
 
-    private Timer _timer;
+    private static Timer _timer;
 
     public int getSkippedPicsCount() {
         return _skippedPicsCount;

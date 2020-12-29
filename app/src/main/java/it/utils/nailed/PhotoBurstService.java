@@ -2,8 +2,11 @@ package it.utils.nailed;
 
 import android.app.Activity;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
@@ -15,12 +18,16 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
 public class PhotoBurstService extends Service {
 
     static String TAG = "PhotoBurstService";
     private static int FOREGROUND_ID=11235;
-    private static final String CHANNEL_DEFAULT_IMPORTANCE = "Running";
     private static final int ONGOING_NOTIFICATION_ID = 1;
+    private static final String BURST_NOTIFICATION_CHANNEL_ID = "BURST_NOTIFICATION_CHANNEL_ID";
+    private static final String CHANNEL_DEFAULT_IMPORTANCE = "Running";
 
     // Binder given to clients
     private final IBinder binder = new LocalBinder();
@@ -43,6 +50,11 @@ public class PhotoBurstService extends Service {
         public BurstServiceHandler(Looper looper) {
             super(looper);
         }
+
+        public void stopBurst() {
+            this.cameraManager.stopBurst();
+        }
+
         @Override
         public void handleMessage(Message msg) {
 
@@ -111,6 +123,8 @@ public class PhotoBurstService extends Service {
         msg.arg1 = startId;
         serviceHandler.sendMessage(msg);
 
+        requestRunInForeground();
+
         // If we get killed, after returning from here, restart
         return START_STICKY;
     }
@@ -154,14 +168,24 @@ public class PhotoBurstService extends Service {
     public void stopBurst() {
         //TODO: actually stop taking pictures
 
+        serviceHandler.stopBurst();
+
         // throw new IllegalAccessException("Not yet implemented");
         stopForeground(true);
+        Log.d(TAG, "stopForeground(true) called");
+        stopSelf();
+        Log.d(TAG, "stopSelf() called");
     }
 
     public boolean isBurstOn() {
         //TODO FIXME
         //throw new IllegalAccessException("Not yet implemented");
         return false;
+    }
+
+    public int getImagesCount() {
+        //TODO FIXME implement this
+        return 0;
     }
 
     private void requestRunInForeground() {
@@ -171,8 +195,9 @@ public class PhotoBurstService extends Service {
 
         //if API >= 26
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel(mainActivity);
             Notification notification =
-                    new Notification.Builder(this, CHANNEL_DEFAULT_IMPORTANCE)
+                    new Notification.Builder(this, BURST_NOTIFICATION_CHANNEL_ID)
                             .setContentTitle(getText(R.string.notification_title))
                             .setContentText(getText(R.string.notification_message))
                             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -194,5 +219,37 @@ public class PhotoBurstService extends Service {
 
             startForeground(ONGOING_NOTIFICATION_ID, notification);
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    public static void createNotificationChannel(@NonNull final Context context) {
+
+        final NotificationChannel channel =
+                new NotificationChannel(PhotoBurstService.BURST_NOTIFICATION_CHANNEL_ID,
+                        context.getString(R.string.notification_channel_name),
+                        NotificationManager.IMPORTANCE_DEFAULT);//IMPORTANCE_LOW
+        channel.setDescription(context.getString(R.string.burst_notification_channel_description));
+        channel.setShowBadge(false);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
+        final NotificationManager notificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) {
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.notification_channel_name);
+            String description = getString(R.string.burst_notification_channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(BURST_NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }*/
     }
 }

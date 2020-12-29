@@ -3,4 +3,6 @@
     <string name="notification_title">NotificationTitle</string>
     <string name="notification_message">NotificationMSG</string>
     <string name="ticker_text">TickerTXT</string>
+    <string name="notification_channel_name">BurstNotificationChannel</string>
+    <string name="burst_notification_channel_description">burst notification channel descr</string>
 </resources>

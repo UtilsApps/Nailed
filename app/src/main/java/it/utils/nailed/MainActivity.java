@@ -82,6 +82,10 @@ public class MainActivity extends AppCompatActivity
         //TODO FIXME refactor and move code to BurstService
         //this.cameraManager.startBurst();
 
+        if(!mBoundToService) {
+            doBindService();
+        }
+
         if(mBoundToService) {
             //TODO call service method to start loop
             // check here oR in the service that the loop is not already started
@@ -96,10 +100,17 @@ public class MainActivity extends AppCompatActivity
         //TODO FIXME refactor and move code to BurstService
         //this.cameraManager.stopBurst();
 
+        Log.d(TAG, "Trying to stop burst..");
+
         if(mBoundToService) {
             //TODO call service method to stop loop
             //mBoundService.stopForeground(true);
-            stopPhotoBurstService();
+            mBoundService.stopBurst(); Log.d(TAG, "mBoundService.stopBurst() called");
+            doUnbindService();
+            stopPhotoBurstService(); Log.d(TAG, " stopPhotoBurstService() called");
+        }
+        else {
+            Log.e(TAG, "Cannot stop burst, not bound to service");
         }
     }
 
@@ -202,10 +213,27 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        // Bind to LocalService
+
+        doBindService();
+    }
+
+    void doBindService() {
+        // Attempts to establish a connection with the service.  We use an
+        // explicit class name because we want a specific service
+        // implementation that we know will be running in our own process
+        // (and thus won't be supporting component replacement by other
+        // applications).
         Intent intent = new Intent(this, PhotoBurstService.class);
         //binds to the service, creating it if necessary
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        boolean bindSuccessful = bindService(intent,
+                mConnection, Context.BIND_AUTO_CREATE);
+
+        if (bindSuccessful) {
+            mShouldUnbind = true;
+        } else {
+            Log.e("Nailed", "Error: The requested service doesn't " +
+                    "exist, or this client isn't allowed access to it.");
+        }
     }
 
     @Override
@@ -214,8 +242,7 @@ public class MainActivity extends AppCompatActivity
 
         //TODO check for foreground service, keeping it active even when activity goes into the backgroud
         // review activity lifecycle, background status
-        unbindService(mConnection);
-        mBoundToService = false;
+        doUnbindService();
     }
 
     // Don't attempt to unbind from the service unless the client has received some
@@ -228,8 +255,6 @@ public class MainActivity extends AppCompatActivity
     private boolean mBoundToService = false;
 
     private ServiceConnection mConnection = new ServiceConnection() {
-
-
 
         public void onServiceConnected(ComponentName className, IBinder service) {
             // This is called when the connection with the service has been
@@ -266,26 +291,16 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-    void doBindService() {
-        // Attempts to establish a connection with the service.  We use an
-        // explicit class name because we want a specific service
-        // implementation that we know will be running in our own process
-        // (and thus won't be supporting component replacement by other
-        // applications).
-        if (bindService(new Intent(MainActivity.this, PhotoBurstService.class),
-                mConnection, Context.BIND_AUTO_CREATE)) {
-            mShouldUnbind = true;
-        } else {
-            Log.e("Nailed", "Error: The requested service doesn't " +
-                    "exist, or this client isn't allowed access to it.");
-        }
-    }
-
     void doUnbindService() {
+        Log.d(TAG, "Trying to unbindservice..");
         if (mShouldUnbind) {
             // Release information about the service's state.
             unbindService(mConnection);
             mShouldUnbind = false;
+            Log.d(TAG, "unbind should be successful");
+        }
+        else {
+            Log.e(TAG, "mShouldUnbind is false");
         }
     }
 
@@ -307,8 +322,16 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void stopPhotoBurstService() {
+        //TODO should unbind the service
+
         Intent serviceIntent = new Intent(this, PhotoBurstService.class);
-        stopService(serviceIntent);
+        //serviceIntent.setAction(Constants.ACTION.STOPFOREGROUND_ACTION);
+
+        if(stopService(serviceIntent)) {
+            Log.d(TAG, "stopService(serviceIntent) successful");
+        } else {
+            Log.e(TAG, "stopService(serviceIntent) failed");
+        }
     }
 
     //TODO

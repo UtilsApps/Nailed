@@ -2,8 +2,6 @@ package it.utils.nailed;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -65,21 +63,17 @@ public class MainActivity extends AppCompatActivity
         TextView outDirTV = findViewById(R.id.outDirTV);
         outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
 
-        timerHandler.post(tvUpdater);
+        timerHandler.post(BurstInfoTextViewsUpdater);
     }
 
     final Handler timerHandler = new Handler();
-    final Runnable tvUpdater = new Runnable() {
+    final Runnable BurstInfoTextViewsUpdater = new Runnable() {
         @Override
         public void run() {
             updatePicSizeTV();
-            timerHandler.postDelayed(tvUpdater,1000);
+            timerHandler.postDelayed(BurstInfoTextViewsUpdater,1000);
         }
     };
-
-    /*void updateTV(final String timeString) {
-        timerHandler.post(tvUpdater);
-    }*/
 
     @Override
     protected void onResume() {
@@ -328,7 +322,7 @@ public class MainActivity extends AppCompatActivity
         doUnbindService();
 
         // need to remove Handler when the activity destroys, else it will leak memory.
-        timerHandler.removeCallbacks(tvUpdater);
+        timerHandler.removeCallbacks(BurstInfoTextViewsUpdater);
     }
 
     private void startPhotoBurstService() {

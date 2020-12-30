@@ -35,6 +35,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void setUpActivityUI() {
+
+        //TODO add (in burst info) counters for current session on how many pictures have been
+        // taken and how many files have been saved
+        // then counter on average and last delays, for camera and for saving picture.
+        // display cpu usage
+        // check also thread name for main activity and service and handler
+
         setContentView(R.layout.activity_main);
 
         getSupportActionBar().hide();

@@ -47,6 +47,14 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         this.myBurstInfo.burstState = burstState;
     }
 
+    public void setOneMorePicTaken() {
+        this.myBurstInfo.picsTakenInCurrentSession++;
+    }
+
+    public void setOneMorePicSaved() {
+        this.myBurstInfo.savedPicsInCurrentSession++;
+    }
+
     public void updateBurstInfo(Camera.Size preferredSize) {
         this.myBurstInfo.preferredSize = preferredSize;
     }

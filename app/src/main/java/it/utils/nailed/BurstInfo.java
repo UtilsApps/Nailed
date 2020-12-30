@@ -15,6 +15,9 @@ public class BurstInfo {
 
     boolean isServiceStarted = false;
 
+    int picsTakenInCurrentSession = 0;
+    int savedPicsInCurrentSession = 0;
+
     //last pic elapsed time
     //average elapsed time of last 7 pics
 

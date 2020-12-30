@@ -171,12 +171,15 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
                     + this.consecutivePicSkips + "), resetting camera..");
             this.resetCamera();
         }
+
     }
 
     protected Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
+            mBurstInfoReceiver.setOneMorePicTaken();
+
             Long elapsedMillis = System.currentTimeMillis() - lastTakePictureCallTime;
             if(elapsedMillis > 200) {
                 Log.e(TAG, "Callback for takePicture returned after " + elapsedMillis);
@@ -186,73 +189,77 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
             }
 
             // we save the picture file here
-
             moveToSAVINGBurstState();
             Log.d(TAG, "onPictureTaken, burst state should be SAVING now");
 
-            if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
-                if (pictureFile == null){
-                    Log.d(TAG, "Error creating media file, check storage permissions");
-                    return;
-                }
-
-                try {
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-                    fos.write(data);
-                    fos.close();
-                    hapticFeedBack();
-                } catch (FileNotFoundException e) {
-                    Log.d(TAG, "File not found: " + e.getMessage());
-                } catch (IOException e) {
-                    Log.d(TAG, "Error accessing file: " + e.getMessage());
-                }
-            }
-            else {
-                // Android 10 and above
-
-                // Add a specific media item.
-                ContentResolver resolver = context.getContentResolver();
-
-                // Find all image files on the primary external storage device.
-                Uri imageCollection = MediaStore.Images.Media.getContentUri(
-                        MediaStore.VOLUME_EXTERNAL_PRIMARY);
-
-                // Publish a new picture/image
-                ContentValues newImageDetails = new ContentValues();
-                String pictureFileName = ImageSaver.getOutputMediaFileName(MEDIA_TYPE_IMAGE);
-                newImageDetails.put(MediaStore.Images.Media.DISPLAY_NAME, pictureFileName);
-                newImageDetails.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                String dirName = "Pictures/" + ImageSaver.getDirNameByTodayDate();
-                newImageDetails.put(MediaStore.Images.Media.RELATIVE_PATH, dirName);
-                newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 1);
-
-                // Keeps a handle to the new image's URI in case we need to modify it later.
-                Uri newImageUri = resolver.insert(imageCollection, newImageDetails);
-
-                try(OutputStream os = resolver.openOutputStream(newImageUri)) {
-                    os.write(data);
-                    os.close();
-                    hapticFeedBack();
-                } catch (FileNotFoundException e) {
-                    Log.e(TAG, "File not found to save image: " + newImageUri.toString());
-                } catch (IOException e) {
-                    Log.e(TAG, "Error while trying to open file to save image" + e.toString());
-                }
-
-                //bmp.compress(Bitmap.CompressFormat.JPEG, 90, out)
-
-                newImageDetails.clear();
-                newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 0);
-                resolver.update(newImageUri, newImageDetails, null, null);
-            }
-
+            saveImageFile(data);
+            mBurstInfoReceiver.setOneMorePicSaved();
+            
             //TODO FIXME: is preview usually still open after a picture has been taken?
             moveToONIDLEBurstState();
             //onPicTakenCallBack.updateMainCameraTextViews();
             continueBurst();
         }
     };
+
+    protected void saveImageFile(byte[] data) {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            if (pictureFile == null){
+                Log.d(TAG, "Error creating media file, check storage permissions");
+                return;
+            }
+
+            try {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+                hapticFeedBack();
+            } catch (FileNotFoundException e) {
+                Log.d(TAG, "File not found: " + e.getMessage());
+            } catch (IOException e) {
+                Log.d(TAG, "Error accessing file: " + e.getMessage());
+            }
+        }
+        else {
+            // Android 10 and above
+
+            // Add a specific media item.
+            ContentResolver resolver = context.getContentResolver();
+
+            // Find all image files on the primary external storage device.
+            Uri imageCollection = MediaStore.Images.Media.getContentUri(
+                    MediaStore.VOLUME_EXTERNAL_PRIMARY);
+
+            // Publish a new picture/image
+            ContentValues newImageDetails = new ContentValues();
+            String pictureFileName = ImageSaver.getOutputMediaFileName(MEDIA_TYPE_IMAGE);
+            newImageDetails.put(MediaStore.Images.Media.DISPLAY_NAME, pictureFileName);
+            newImageDetails.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            String dirName = "Pictures/" + ImageSaver.getDirNameByTodayDate();
+            newImageDetails.put(MediaStore.Images.Media.RELATIVE_PATH, dirName);
+            newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 1);
+
+            // Keeps a handle to the new image's URI in case we need to modify it later.
+            Uri newImageUri = resolver.insert(imageCollection, newImageDetails);
+
+            try(OutputStream os = resolver.openOutputStream(newImageUri)) {
+                os.write(data);
+                os.close();
+                hapticFeedBack();
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "File not found to save image: " + newImageUri.toString());
+            } catch (IOException e) {
+                Log.e(TAG, "Error while trying to open file to save image" + e.toString());
+            }
+
+            //bmp.compress(Bitmap.CompressFormat.JPEG, 90, out)
+
+            newImageDetails.clear();
+            newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 0);
+            resolver.update(newImageUri, newImageDetails, null, null);
+        }
+    }
 
     public void stopBurst() {
 

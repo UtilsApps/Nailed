@@ -36,9 +36,7 @@ public class MainActivity extends AppCompatActivity
 
     private void setUpActivityUI() {
 
-        //TODO add (in burst info) counters for current session on how many pictures have been
-        // taken and how many files have been saved
-        // then counter on average and last delays, for camera and for saving picture.
+        //TODO add (in burst info) counter on average and last delays, for camera and for saving picture.
         // display cpu usage
         // check also thread name for main activity and service and handler
 
@@ -100,7 +98,7 @@ public class MainActivity extends AppCompatActivity
 
         //TODO FIXME when stopping and then starting again, the burst does not actually resume:
         // "RuntimeException startPreview failed"
-        // Maybe camera should not be relased when stopping burst? Or should be obtained
+        // Maybe camera should not be released when stopping burst? Or should be obtained
         // from scratch when starting burst?
 
         Log.d(TAG, "Starting burst..");

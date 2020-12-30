@@ -49,8 +49,10 @@ public class Camera1Manager extends Camera1ManagerStateBased {
     // allow change size with volume up/down, and take continuous pics on and off with screen tap
 
     public Camera1Manager(Context context, Activity activity,
-                          OnPicTakenCallBack onPicTakenCallBack, BurstType burstType) {
-        super(context);
+                          OnPicTakenCallBack onPicTakenCallBack,
+                          BurstType burstType,
+                          BurstInfoReceiver burstInfoReceiver) {
+        super(context, burstInfoReceiver);
         this.myBurstType = burstType;
 
         if(this.myBurstType == BurstType.THREAD_SLEEP_BASED) {
@@ -67,9 +69,10 @@ public class Camera1Manager extends Camera1ManagerStateBased {
     }
 
     public Camera1Manager(Context context, Activity activity,
-                          OnPicTakenCallBack onPicTakenCallBack) {
+                          OnPicTakenCallBack onPicTakenCallBack,
+                          BurstInfoReceiver burstInfoReceiver) {
 
-        this(context, activity, onPicTakenCallBack, DEFAULT_BURST_TYPE);
+        this(context, activity, onPicTakenCallBack, DEFAULT_BURST_TYPE, burstInfoReceiver);
     }
 
     @Override

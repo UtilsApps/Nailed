@@ -20,24 +20,54 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
     static final String TAG = "Cam1ManagerStateBased";
 
-    protected enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, SAVING, OFF }
+    public enum BurstState { ON_IDLE, ON_PREVIEWING, ON_PIC_PENDING, SAVING, OFF }
     private BurstState myBurstState;
+
     protected enum BurstType { TIMER_BASED, THREAD_SLEEP_BASED};
     protected static final BurstType DEFAULT_BURST_TYPE = BurstType.THREAD_SLEEP_BASED;
     protected BurstType myBurstType;
     Camera1Manager.OnPicTakenCallBack onPicTakenCallBack;
 
-    public Camera1ManagerStateBased(Context context) {
+    public Camera1ManagerStateBased(Context context, BurstInfoReceiver burstInfoReceiver) {
         this.context = context;
+        this.mBurstInfoReceiver = burstInfoReceiver;
+        this.myBurstInfo = new BurstInfo();
+        this.mBurstInfoReceiver.setBurstInfo(this.myBurstInfo);
+        moveToOFFBurstState();
+    }
+
+    protected void moveToOFFBurstState() {
         this.myBurstState = BurstState.OFF;
+        updateBurstInfo(this.myBurstState);
+    }
+
+    protected void moveToONPREVIEWINGBurstState() {
+        this.myBurstState = BurstState.ON_PREVIEWING;
+        updateBurstInfo(this.myBurstState);
+    }
+
+    protected void moveToONIDLEBurstState() {
+        this.myBurstState = BurstState.ON_IDLE;
+        updateBurstInfo(this.myBurstState);
+    }
+
+    protected void moveToONPICPENDINGBurstState() {
+        this.myBurstState = BurstState.ON_PIC_PENDING;
+        updateBurstInfo(this.myBurstState);
+    }
+
+    protected void moveToSAVINGBurstState() {
+        this.myBurstState = BurstState.SAVING;
+        updateBurstInfo(this.myBurstState);
     }
 
     protected boolean isBurstPicPending() {
         return myBurstState == BurstState.ON_PIC_PENDING;
     }
 
-    public int getSkippedPicsCount() {
-        return _skippedPicsCount;
+    protected void updateBurstInfo(BurstState burstState) {
+        this.myBurstInfo.burstState = burstState;
+        this.mBurstInfoReceiver.setBurstInfo(this.myBurstInfo);
     }
 
     public void incrementSkippedPicsCount() {
@@ -45,7 +75,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
     }
 
     protected boolean startCameraPreview() {
-        this.myBurstState = BurstState.ON_PREVIEWING;
+        this.moveToONPREVIEWINGBurstState();
 
         if(this.camera == null) {
             this.camera = getCameraInstance();
@@ -64,7 +94,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
         } catch (IOException e) {
             Log.e(TAG, e.toString());
             this.previewInitialized = false;
-            this.myBurstState = BurstState.ON_IDLE;
+            this.moveToONIDLEBurstState();
         }
 
         if(previewInitialized) {
@@ -85,7 +115,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
                 this.previewStarted = false;
-                this.myBurstState = BurstState.ON_IDLE;
+                this.moveToONIDLEBurstState();
             }
         }
 
@@ -99,7 +129,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
             }
             camera.stopPreview();
             this.myCameraState = CameraState.OPENED_IDLE;
-            this.myBurstState = BurstState.ON_IDLE;
+            this.moveToONIDLEBurstState();
             return true;
         } catch (RuntimeException e) {
             Log.e(TAG, e.toString());
@@ -114,7 +144,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
 
         if(previewInitialized && previewStarted) {
             try {
-                this.myBurstState = BurstState.ON_PIC_PENDING;
+                this.moveToONPICPENDINGBurstState();
 
                 //TODO FIXME on real phone, the callback is often never called
                 Log.d(TAG, "Taking picture, asynchronously..");
@@ -124,7 +154,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
             } catch (RuntimeException e) {
                 Log.e(TAG, e.toString());
                 e.printStackTrace();
-                this.myBurstState = BurstState.ON_IDLE;
+                this.moveToONIDLEBurstState();
                 this.incrementSkippedPicsCount();
                 this.consecutivePicSkips++;
 
@@ -137,7 +167,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
         }
         else {
             Log.e(TAG, "Skipping take picture");
-            this.myBurstState = BurstState.ON_IDLE;
+            this.moveToONIDLEBurstState();
             this.incrementSkippedPicsCount();
             this.consecutivePicSkips++;
             setCameraParams();//resetting the params in case that's why preview fails
@@ -164,7 +194,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
 
             // we save the picture file here
 
-            myBurstState = BurstState.SAVING;
+            moveToSAVINGBurstState();
             Log.d(TAG, "onPictureTaken, burst state should be SAVING now");
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -225,7 +255,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
             }
 
             //TODO FIXME: is preview usually still open after a picture has been taken?
-            myBurstState = BurstState.ON_IDLE;
+            moveToONIDLEBurstState();
             onPicTakenCallBack.updateMainCameraTextViews();
             continueBurst();
         }
@@ -248,7 +278,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
 
         //TODO FIXME check why this is called when stopping burst instead of app exiting
         this.close();
-        this.myBurstState = Camera1ManagerStateBased.BurstState.OFF;
+        this.moveToOFFBurstState();
         this.onPicTakenCallBack.updateMainCameraTextViews();
     }
 }

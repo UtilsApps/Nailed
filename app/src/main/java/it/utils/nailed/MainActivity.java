@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
@@ -22,7 +23,6 @@ public class MainActivity extends AppCompatActivity
 
     static String TAG = "MainActivity";
 
-    Camera1Manager cameraManager;
     public static MainActivity activity;
 
     //TODO at startup should query if service is already running
@@ -35,11 +35,6 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         getSupportActionBar().hide();
-
-        //TODO
-        // replace cameraManager with service, which calls it
-        // pass parameters to service on pic res etc
-        this.cameraManager = new Camera1Manager(this, this, this);
 
         Button takePicBtn = findViewById(R.id.takePicBtn);
         takePicBtn.setOnClickListener(new View.OnClickListener() {
@@ -69,7 +64,22 @@ public class MainActivity extends AppCompatActivity
 
         TextView outDirTV = findViewById(R.id.outDirTV);
         outDirTV.setText(ImageSaver.getOutputMediaDirDaySpecific().getPath());
+
+        timerHandler.post(tvUpdater);
     }
+
+    final Handler timerHandler = new Handler();
+    final Runnable tvUpdater = new Runnable() {
+        @Override
+        public void run() {
+            updatePicSizeTV();
+            timerHandler.postDelayed(tvUpdater,1000);
+        }
+    };
+
+    /*void updateTV(final String timeString) {
+        timerHandler.post(tvUpdater);
+    }*/
 
     @Override
     protected void onResume() {
@@ -79,8 +89,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startBurst() {
-        //TODO FIXME refactor and move code to BurstService
-        //this.cameraManager.startBurst();
 
         if(!mBoundToService) {
             doBindService();
@@ -97,8 +105,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void stopBurst() {
-        //TODO FIXME refactor and move code to BurstService
-        //this.cameraManager.stopBurst();
 
         Log.d(TAG, "Trying to stop burst..");
 
@@ -117,7 +123,9 @@ public class MainActivity extends AppCompatActivity
     private void closeApp() {
 
         stopBurst();
-        cameraManager.close();
+        if(this.mBoundToService) {
+            this.mBoundService.closeCameraManager();
+        }
 
         //this.finishAndRemoveTask();
         this.finish();
@@ -152,11 +160,19 @@ public class MainActivity extends AppCompatActivity
 
     private void updatePicSizeTV() {
         TextView picSizeTV = findViewById(R.id.pictureSizeTV);
-        Camera.Size picSize = cameraManager.getPreferredPhotoSize();
 
-        if(picSize != null) {
-            picSizeTV.setText(picSize.height + " x " + picSize.width);
+        String picSizeTxt = "";
+        String burstStateTxt = "";
+
+        if(mBoundToService && mBoundService.myBurstInfo != null) {
+            Camera.Size preferredSize = mBoundService.myBurstInfo.preferredSize;
+            if(preferredSize != null) {
+                picSizeTxt = preferredSize.height + " x " + preferredSize.width;
+            }
+            burstStateTxt = mBoundService.myBurstInfo.burstState.toString();
         }
+
+        picSizeTV.setText(picSizeTxt + "; " + burstStateTxt);
     }
 
     //TODO haptic feedback at each picture
@@ -198,7 +214,7 @@ public class MainActivity extends AppCompatActivity
 
     private void updateSkippedPicsCountTV() {
         TextView skippedPicsCountTV = findViewById(R.id.skippedCountTV);
-        skippedPicsCountTV.setText("Skipped: " + cameraManager.getSkippedPicsCount());
+        skippedPicsCountTV.setText("Skipped: ..");
     }
 
     @Override
@@ -310,6 +326,9 @@ public class MainActivity extends AppCompatActivity
 
         //FIXME: ..
         doUnbindService();
+
+        // need to remove Handler when the activity destroys, else it will leak memory.
+        timerHandler.removeCallbacks(tvUpdater);
     }
 
     private void startPhotoBurstService() {

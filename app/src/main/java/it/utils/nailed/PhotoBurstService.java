@@ -21,7 +21,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-public class PhotoBurstService extends Service {
+public class PhotoBurstService extends Service implements BurstInfoReceiver {
 
     static String TAG = "PhotoBurstService";
     private static int FOREGROUND_ID=11235;
@@ -35,6 +35,16 @@ public class PhotoBurstService extends Service {
     private Looper serviceLooper;
     private BurstServiceHandler serviceHandler;
     private MainActivity mainActivity;
+
+    BurstInfo myBurstInfo;
+
+    public void setBurstInfo(BurstInfo burstInfo) {
+        this.myBurstInfo = burstInfo;
+    }
+
+    public BurstInfo getBurstInfo() {
+        return this.myBurstInfo;
+    }
 
     // Handler that receives messages from the thread
     private final class BurstServiceHandler extends Handler {
@@ -115,7 +125,7 @@ public class PhotoBurstService extends Service {
         Log.i(TAG, "Creating camera manager..");
         Camera1Manager cameraManager = new Camera1Manager(this,
                 this.mainActivity,
-                this.mainActivity);
+                this.mainActivity, this);
         Log.i(TAG, "Camera manager should be created: " + cameraManager.toString());
         this.serviceHandler.setCameraManager(cameraManager);
 
@@ -177,6 +187,10 @@ public class PhotoBurstService extends Service {
         Log.d(TAG, "stopForeground(true) called");
         stopSelf();
         Log.d(TAG, "stopSelf() called");
+    }
+
+    public void closeCameraManager() {
+       serviceHandler.cameraManager.close();
     }
 
     public boolean isBurstOn() {

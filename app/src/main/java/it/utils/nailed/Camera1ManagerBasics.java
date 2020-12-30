@@ -31,6 +31,8 @@ abstract class Camera1ManagerBasics {
     protected static final int MAX_SKIPS = 10;
     protected int _skippedPicsCount;
     protected List<Camera.Size> supportedPictureSizes;
+    protected BurstInfoReceiver mBurstInfoReceiver;
+    protected BurstInfo myBurstInfo;
 
     /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance() {
@@ -151,6 +153,11 @@ abstract class Camera1ManagerBasics {
         this._timer = new Timer();
     }
 
+    protected void updateBurstInfo(Camera.Size preferredSize) {
+        this.myBurstInfo.preferredSize = preferredSize;
+        this.mBurstInfoReceiver.setBurstInfo(this.myBurstInfo);
+    }
+
     protected void setCameraParams() {
 
         try {
@@ -164,6 +171,7 @@ abstract class Camera1ManagerBasics {
             Camera.Size preferredSize = getPreferredPhotoSize();
 
             params.setPictureSize(preferredSize.width, preferredSize.height);
+            updateBurstInfo(preferredSize);
 
             // set Camera parameters
             Log.d(TAG, "Setting camera params as " + params.toString() + " ..");

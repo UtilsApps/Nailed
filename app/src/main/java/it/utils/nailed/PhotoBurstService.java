@@ -46,6 +46,14 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         return this.myBurstInfo;
     }
 
+    //TODO FIXME
+    // service always running and binded
+    // gets unbinden only when activity is destroyed
+    // clicking on burst on button causes to put service in foreground
+    // and to send message to handler to start burst
+    // clicking on stop burst causes to remove service from foreground
+    // and terminate handler or send message to stop burst
+
     // Handler that receives messages from the thread
     private final class BurstServiceHandler extends Handler {
 

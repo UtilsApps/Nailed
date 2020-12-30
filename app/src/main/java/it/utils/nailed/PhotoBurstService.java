@@ -147,6 +147,8 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         this.serviceHandler.initialize(cameraManager, this);
     }
 
+
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
@@ -159,10 +161,22 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         msg.arg1 = startId;
         this.serviceHandler.sendMessage(msg);*/
 
-        this.startBurst();
+        // FIXME do not start burst when service start
+        //this.startBurst();
+
+        this.myBurstInfo.isServiceStarted = true;
 
         // If we get killed, after returning from here, restart
         return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        //TODO FIXME make sure handler is removed too
+
+        this.myBurstInfo.isServiceStarted = false;
     }
 
     /**

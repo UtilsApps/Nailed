@@ -31,6 +31,10 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MainActivity.activity = this;
+        setUpActivityUI();
+    }
+
+    private void setUpActivityUI() {
         setContentView(R.layout.activity_main);
 
         getSupportActionBar().hide();
@@ -87,17 +91,27 @@ public class MainActivity extends AppCompatActivity
 
     private void startBurst() {
 
+        //TODO FIXME when stopping and then starting again, the burst does not actually resume:
+        // "RuntimeException startPreview failed"
+        // Maybe camera should not be relased when stopping burst? Or should be obtained
+        // from scratch when starting burst?
+
+        Log.d(TAG, "Starting burst..");
+        // check here oR in the service that the loop is not already started
+
         if(!mBoundToService) {
             doBindService();
         }
 
-        if(mBoundToService) {
-            //TODO call service method to start loop
-            // check here oR in the service that the loop is not already started
-            //mBoundService.startForeground();
+        if(!this.mBoundService.myBurstInfo.isServiceStarted) {
             startPhotoBurstService();
+        }
+
+        if(mBoundToService && this.mBoundService.myBurstInfo.isServiceStarted) {
+            this.mBoundService.startBurst();
+            Log.d(TAG, "Burst should be started.");
         } else {
-            //should try to bind the service, then start it
+            Log.e(TAG, "Unable to start service, unable to bind to it");
         }
     }
 
@@ -106,31 +120,11 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "Trying to stop burst..");
 
         if(mBoundToService) {
-            //TODO call service method to stop loop
-            //mBoundService.stopForeground(true);
             mBoundService.stopBurst(); Log.d(TAG, "mBoundService.stopBurst() called");
-            doUnbindService();
-            stopPhotoBurstService(); Log.d(TAG, " stopPhotoBurstService() called");
         }
         else {
             Log.e(TAG, "Cannot stop burst, not bound to service");
         }
-    }
-
-    private void closeApp() {
-
-        stopBurst();
-        if(this.mBoundToService) {
-            this.mBoundService.closeCameraManager();
-        }
-
-        //this.finishAndRemoveTask();
-        this.finish();
-
-        //close other camera resources?
-        //close file saver resources?
-
-        //terminate app threads, not only activity
     }
 
     public void updateMainCameraTextViews() {
@@ -252,6 +246,18 @@ public class MainActivity extends AppCompatActivity
         super.onStart();
 
         doBindService();
+        startPhotoBurstService();
+    }
+
+    private void startPhotoBurstService() {
+
+        if(!mBoundToService) {
+            doBindService();
+        }
+
+        // bindService creates the service, but does it start it? is this redundant?
+        Intent serviceIntent = new Intent(this, PhotoBurstService.class);
+        startService(serviceIntent);
     }
 
     void doBindService() {
@@ -279,10 +285,36 @@ public class MainActivity extends AppCompatActivity
 
         //TODO check for foreground service, keeping it active even when activity goes into the backgroud
         // review activity lifecycle, background status
-        doUnbindService();
+        //doUnbindService();
     }
 
-    // Don't attempt to unbind from the service unless the client has received some
+
+    private void releaseResources() {
+        stopBurst();
+
+        if(this.mBoundToService) {
+            //TODO FIXME check this
+            mBoundService.stopForeground(true);
+            stopPhotoBurstService(); Log.d(TAG, " stopPhotoBurstService() called");
+            this.mBoundService.closeCameraManager();
+            doUnbindService();
+        }
+    }
+
+    private void closeApp() {
+
+        releaseResources();
+
+        //this.finishAndRemoveTask();
+        this.finish();
+
+        //close other camera resources?
+        //close file saver resources?
+
+        //terminate app threads, not only activity
+    }
+
+            // Don't attempt to unbind from the service unless the client has received some
     // information about the service's state.
     private boolean mShouldUnbind;
 
@@ -345,20 +377,10 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
 
-        //FIXME: ..
-        doUnbindService();
+        releaseResources();
 
         // need to remove Handler when the activity destroys, else it will leak memory.
         timerHandler.removeCallbacks(BurstInfoTextViewsUpdater);
-    }
-
-    private void startPhotoBurstService() {
-        //<service android:name=".PhotoBurstService" />
-
-        // TODO fix, check
-        // bindService creates the service, but does it start it?
-        Intent serviceIntent = new Intent(this, PhotoBurstService.class);
-        startService(serviceIntent);
     }
 
     private void stopPhotoBurstService() {
@@ -387,10 +409,6 @@ public class MainActivity extends AppCompatActivity
     //TODO
     // query service for status, info
 
-    private void doStuff() {
-        mBoundService.getCount();
-    }
-
     //Two ways of starting the service:
     // ..with Intent
 
@@ -401,7 +419,4 @@ public class MainActivity extends AppCompatActivity
     // widgets to change resolution
     // widget to display interval between photos
     // widget to display free disk space left
-
-    
-
 }

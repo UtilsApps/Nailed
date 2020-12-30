@@ -13,6 +13,8 @@ public class BurstInfo {
     //Other info: ..burst on, service bound, service running, service looping
     boolean isBurstOn = false;
 
+    boolean isServiceStarted = false;
+
     //last pic elapsed time
     //average elapsed time of last 7 pics
 

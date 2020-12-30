@@ -15,6 +15,8 @@ abstract class Camera1ManagerBasics {
 
     static final String TAG = "Cam1ManagerBasics";
 
+    protected Long lastTakePictureCallTime = System.currentTimeMillis();
+    protected int preferredPeriodMillis = 700;
     protected Vibrator vibeHapticFeedback;
     protected Context context;
     protected Camera camera;
@@ -28,6 +30,7 @@ abstract class Camera1ManagerBasics {
     protected int consecutivePicSkips;
     protected static final int MAX_SKIPS = 10;
     protected int _skippedPicsCount;
+    protected List<Camera.Size> supportedPictureSizes;
 
     /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance() {
@@ -42,6 +45,35 @@ abstract class Camera1ManagerBasics {
             e.printStackTrace();
         }
         return c; // returns null if camera is unavailable
+    }
+
+    abstract boolean isBurstPicPending();
+    abstract void takeSinglePicture();
+
+    protected void continueBurst() {
+        if(this.burstShouldStop) {
+            return;
+        }
+        else {
+            //Long tsBegin = System.currentTimeMillis();
+            if (this.isBurstPicPending()) {
+                Log.e(TAG, "continueBurst called while Burst state PicPending");
+            }
+
+            Long elapsedTIme = System.currentTimeMillis() - lastTakePictureCallTime;
+            Long remainingMillis = preferredPeriodMillis - elapsedTIme;
+            if(remainingMillis > 0) {
+                Log.d(TAG, "Sleeping " + remainingMillis + " millis..");
+                try {
+                    Thread.sleep(remainingMillis);
+                }
+                catch (InterruptedException e) {
+                    Log.e(TAG, "Thread interruped while bursting.");
+                    return;
+                }
+            }
+            takeSinglePicture();
+        }
     }
 
     protected void hapticFeedBack() {
@@ -124,6 +156,7 @@ abstract class Camera1ManagerBasics {
         try {
             // get Camera parameters
             Camera.Parameters params = camera.getParameters();
+            this.supportedPictureSizes = params.getSupportedPictureSizes();
             // set the focus mode
             //params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             //params.setJpegQuality(95);
@@ -133,7 +166,9 @@ abstract class Camera1ManagerBasics {
             params.setPictureSize(preferredSize.width, preferredSize.height);
 
             // set Camera parameters
+            Log.d(TAG, "Setting camera params as " + params.toString() + " ..");
             camera.setParameters(params);
+            Log.d(TAG, "Camera params set as " + params.toString());
         }
         catch (Exception e) {
             Log.e(TAG, "Unable to set camera params: " + e.toString());
@@ -141,7 +176,7 @@ abstract class Camera1ManagerBasics {
     }
 
     public Camera.Size getPreferredPhotoSize() {
-
+        /*
         if(camera == null) {
             return null;
         }
@@ -157,17 +192,17 @@ abstract class Camera1ManagerBasics {
         }
 
         List<Camera.Size> supportedSizes = params.getSupportedPictureSizes();
-
+        */
         int preferredSizeIdx = 11;
 
-        Camera.Size defaultMinSize = supportedSizes.get(supportedSizes.size()-1);
+        Camera.Size defaultMinSize = this.supportedPictureSizes.get(this.supportedPictureSizes.size()-1);
         Camera.Size preferredSize = defaultMinSize;
-        if(supportedSizes.size() >preferredSizeIdx ) {
-            preferredSize = supportedSizes.get(preferredSizeIdx);
+        if(this.supportedPictureSizes.size() >preferredSizeIdx ) {
+            preferredSize = this.supportedPictureSizes.get(preferredSizeIdx);
         }
 
         int preferredHeight = 720;
-        for(Camera.Size size:supportedSizes) {
+        for(Camera.Size size:this.supportedPictureSizes) {
             if(size.height == preferredHeight) {
                 preferredSize = size;
                 break;

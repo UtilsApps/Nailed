@@ -32,14 +32,6 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
         this.myBurstState = BurstState.OFF;
     }
 
-    public boolean isBurstOn() {
-        return this.myBurstState != BurstState.OFF;
-    }
-
-    protected BurstState getBurstState() {
-        return this.myBurstState;
-    }
-
     protected boolean isBurstPicPending() {
         return myBurstState == BurstState.ON_PIC_PENDING;
     }
@@ -123,6 +115,10 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
         if(previewInitialized && previewStarted) {
             try {
                 this.myBurstState = BurstState.ON_PIC_PENDING;
+
+                //TODO FIXME on real phone, the callback is often never called
+                Log.d(TAG, "Taking picture, asynchronously..");
+                this.lastTakePictureCallTime = System.currentTimeMillis();
                 camera.takePicture(null, null, null, jpegCallback);
                 this.consecutivePicSkips = 0;
             } catch (RuntimeException e) {
@@ -158,11 +154,18 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
+            Long elapsedMillis = System.currentTimeMillis() - lastTakePictureCallTime;
+            if(elapsedMillis > 200) {
+                Log.e(TAG, "Callback for takePicture returned after " + elapsedMillis);
+            }
+            else {
+                Log.d(TAG, "Callback for takePicture returned after " + elapsedMillis);
+            }
 
             // we save the picture file here
 
             myBurstState = BurstState.SAVING;
-            Log.d(TAG, "onPictureTaken");
+            Log.d(TAG, "onPictureTaken, burst state should be SAVING now");
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
@@ -224,6 +227,7 @@ abstract class Camera1ManagerStateBased extends Camera1ManagerBasics{
             //TODO FIXME: is preview usually still open after a picture has been taken?
             myBurstState = BurstState.ON_IDLE;
             onPicTakenCallBack.updateMainCameraTextViews();
+            continueBurst();
         }
     };
 

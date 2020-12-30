@@ -124,18 +124,38 @@ public class Camera1Manager extends Camera1ManagerStateBased {
 
     public void startBurst() {
         //Set the amount of time between each execution (in milliseconds)
-        int periodMillis = 700;
 
         if(this.myBurstType == BurstType.THREAD_SLEEP_BASED) {
             this.burstShouldStop = false;
-            doSleepBasedBurst(periodMillis);
+            doCallBackBasedBurst();
         }
         else {
-            startTimerBasedBurst(periodMillis);
+            startTimerBasedBurst();
         }
     }
 
-    void doSleepBasedBurst(int periodMillis) {
+    void doCallBackBasedBurst() {
+
+        //before first call to take picture, make make sure burst state not pending
+        while (this.isBurstPicPending() && !burstShouldStop) {
+            //TODO FIXME
+            // this happens too often, add tests for use of pending state
+            // test if we are still on main thread, because warning about that gets logged
+            Log.w(TAG, "Pic pending, sleeping 100 millis");
+            try {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException e) {
+                Log.e(TAG, "Thread interruped while bursting.");
+                return;
+            }
+        }
+
+        continueBurst();
+    }
+
+    @Deprecated
+    void doSleepBasedBurst2() {
 
         while(!this.burstShouldStop) {
             // loop (while until not stopped, thread stop):
@@ -144,12 +164,13 @@ public class Camera1Manager extends Camera1ManagerStateBased {
             tsBegin = System.currentTimeMillis();
             // take pic
             if (!this.isBurstPicPending()) {
+                //FIXME this is an asynch call
                 takeSinglePicture();
                 // thread sleep period-elapsed time
                 tsEnd = System.currentTimeMillis();
                 Long elapsedTIme = tsEnd - tsBegin;
                 Log.d(TAG, "Pic taken, elapsed time: " + elapsedTIme);
-                Long remainingMillis = periodMillis - elapsedTIme;
+                Long remainingMillis = preferredPeriodMillis - elapsedTIme;
                 if(remainingMillis > 0) {
                     Log.d(TAG, "Sleeping " + remainingMillis + " millis..");
                     try {
@@ -183,7 +204,7 @@ public class Camera1Manager extends Camera1ManagerStateBased {
         // and which the service
     }
 
-    void startTimerBasedBurst(int periodMillis) {
+    void startTimerBasedBurst() {
 
         //TODO FIXME: check, commenting this because duplicated, we already call start preview before taking picture
         //this.startCameraPreview();
@@ -210,7 +231,7 @@ public class Camera1Manager extends Camera1ManagerStateBased {
                     Log.w(TAG, "Pic pending, skipping..");
                 }
             }
-        },delay,periodMillis);
+        },delay,preferredPeriodMillis);
     }
 
     //TODO FIXME
@@ -218,8 +239,7 @@ public class Camera1Manager extends Camera1ManagerStateBased {
     // (it doesn't update each time)
 
 
-
-    private void takeSinglePicture() {
+    protected void takeSinglePicture() {
         takePicture();
     }
 

@@ -222,6 +222,16 @@ public class MainActivity extends AppCompatActivity
         TextView picCounterTV = findViewById(R.id.photoCountTV);
         int imgCount = getCurrentImageDirCount();
         picCounterTV.setText("" + imgCount);
+
+        if(mBoundToService && mBoundService.getBurstInfo() != null) {
+            TextView takenCounterTV = findViewById(R.id.takenCounterTV);
+            int picsTaken = mBoundService.getBurstInfo().picsTakenInCurrentSession;
+            takenCounterTV.setText("Taken: " + picsTaken);
+
+            TextView savedCounterTV = findViewById(R.id.savedCounterTV);
+            int picsSaved = mBoundService.getBurstInfo().savedPicsInCurrentSession;
+            savedCounterTV.setText("Saved: " + picsSaved);
+        }
     }
 
     private int getCurrentImageDirCount() {

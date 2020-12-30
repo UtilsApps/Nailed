@@ -110,6 +110,22 @@
             >
         </TextView>
         <TextView
+            android:id="@+id/takenCounterTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
+            android:text="Taken: 0"
+            >
+        </TextView>
+        <TextView
+            android:id="@+id/savedCounterTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
+            android:text="Saved: 0"
+            >
+        </TextView>
+        <TextView
             android:id="@+id/outDirTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

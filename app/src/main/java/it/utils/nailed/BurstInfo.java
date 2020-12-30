@@ -11,6 +11,7 @@ public class BurstInfo {
     Camera1ManagerStateBased.BurstState burstState;
 
     //Other info: ..burst on, service bound, service running, service looping
+    boolean isBurstOn = false;
 
     //last pic elapsed time
     //average elapsed time of last 7 pics

@@ -153,11 +153,6 @@ abstract class Camera1ManagerBasics {
         this._timer = new Timer();
     }
 
-    protected void updateBurstInfo(Camera.Size preferredSize) {
-        this.myBurstInfo.preferredSize = preferredSize;
-        this.mBurstInfoReceiver.setBurstInfo(this.myBurstInfo);
-    }
-
     protected void setCameraParams() {
 
         try {
@@ -171,7 +166,7 @@ abstract class Camera1ManagerBasics {
             Camera.Size preferredSize = getPreferredPhotoSize();
 
             params.setPictureSize(preferredSize.width, preferredSize.height);
-            updateBurstInfo(preferredSize);
+            this.mBurstInfoReceiver.updateBurstInfo(preferredSize);
 
             // set Camera parameters
             Log.d(TAG, "Setting camera params as " + params.toString() + " ..");

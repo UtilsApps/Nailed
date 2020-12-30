@@ -17,7 +17,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity
-        implements Camera1Manager.OnPicTakenCallBack {
+        //implements Camera1Manager.OnPicTakenCallBack
+        {
 
     static String TAG = "MainActivity";
 
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity
     final Runnable BurstInfoTextViewsUpdater = new Runnable() {
         @Override
         public void run() {
-            updatePicSizeTV();
+            updateMainCameraTextViews();
             timerHandler.postDelayed(BurstInfoTextViewsUpdater,1000);
         }
     };
@@ -141,9 +142,10 @@ public class MainActivity extends AppCompatActivity
 
     private void updateItsOn() {
         TextView itsOnTV = findViewById(R.id.itsOnTV);
+
         boolean isBurstOn = false;
 
-        if(mBoundToService && mBoundService.isBurstOn()) {
+        if(mBoundToService && mBoundService.getBurstInfo().isBurstOn) {
             isBurstOn = true;
         }
 
@@ -151,6 +153,13 @@ public class MainActivity extends AppCompatActivity
             itsOnTV.setText("IT'S ON");
         } else {
             itsOnTV.setText("");
+        }
+
+        TextView connectedTV = findViewById(R.id.connectedTV);
+        if(mBoundToService) {
+            connectedTV.setText("Connected");
+        } else {
+            connectedTV.setText("Not connected");
         }
     }
 

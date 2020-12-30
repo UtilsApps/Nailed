@@ -40,16 +40,16 @@ public class Camera1Manager extends Camera1ManagerStateBased {
 
     //private SurfaceView preview;
 
-    interface OnPicTakenCallBack {
+    /*interface OnPicTakenCallBack {
         void updateMainCameraTextViews();
-    }
+    }*/
 
     //TODO set photo size
     // allow setting it
     // allow change size with volume up/down, and take continuous pics on and off with screen tap
 
     public Camera1Manager(Context context, Activity activity,
-                          OnPicTakenCallBack onPicTakenCallBack,
+                          /*OnPicTakenCallBack onPicTakenCallBack,*/
                           BurstType burstType,
                           BurstInfoReceiver burstInfoReceiver) {
         super(context, burstInfoReceiver);
@@ -59,7 +59,7 @@ public class Camera1Manager extends Camera1ManagerStateBased {
             this.burstShouldStop = false;
         }
 
-        this.onPicTakenCallBack = onPicTakenCallBack;
+        //this.onPicTakenCallBack = onPicTakenCallBack;
         this.checkForCameraPermission(context, activity);
 
         this.vibeHapticFeedback = ( Vibrator ) context.getSystemService( VIBRATOR_SERVICE );
@@ -69,10 +69,12 @@ public class Camera1Manager extends Camera1ManagerStateBased {
     }
 
     public Camera1Manager(Context context, Activity activity,
-                          OnPicTakenCallBack onPicTakenCallBack,
+                          /*OnPicTakenCallBack onPicTakenCallBack,*/
                           BurstInfoReceiver burstInfoReceiver) {
 
-        this(context, activity, onPicTakenCallBack, DEFAULT_BURST_TYPE, burstInfoReceiver);
+        this(context, activity,
+                /*onPicTakenCallBack, */
+                DEFAULT_BURST_TYPE, burstInfoReceiver);
     }
 
     @Override

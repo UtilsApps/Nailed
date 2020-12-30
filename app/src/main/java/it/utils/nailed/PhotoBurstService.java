@@ -8,6 +8,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.Camera;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -38,8 +39,20 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
 
     BurstInfo myBurstInfo;
 
-    public void setBurstInfo(BurstInfo burstInfo) {
+    /*public void setBurstInfo(BurstInfo burstInfo) {
         this.myBurstInfo = burstInfo;
+    }*/
+
+    public void updateBurstInfo(Camera1ManagerStateBased.BurstState burstState) {
+        this.myBurstInfo.burstState = burstState;
+    }
+
+    public void updateBurstInfo(Camera.Size preferredSize) {
+        this.myBurstInfo.preferredSize = preferredSize;
+    }
+
+    public void setIsBurstOn(boolean isBurstOn) {
+        this.myBurstInfo.isBurstOn = isBurstOn;
     }
 
     public BurstInfo getBurstInfo() {
@@ -58,11 +71,14 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
     private final class BurstServiceHandler extends Handler {
 
         Camera1Manager cameraManager;
+        BurstInfoReceiver burstInfoReceiver;
 
         //This must be called before handlemessage
-        public void setCameraManager(Camera1Manager cameraManager) {
+        public void initialize(Camera1Manager cameraManager, BurstInfoReceiver burstInfoReceiver) {
             this.cameraManager = cameraManager;
             Log.i(TAG, "Camera manager set into service handler");
+
+            this.burstInfoReceiver = burstInfoReceiver;
         }
 
         public BurstServiceHandler(Looper looper) {
@@ -72,27 +88,26 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         public void stopBurst() {
             if(this.cameraManager != null) {
                 this.cameraManager.stopBurst();
+                this.burstInfoReceiver.setIsBurstOn(false);
             }
         }
 
-        @Override
-        public void handleMessage(Message msg) {
-
-            //TODO rewrite to take pictures
-            // probaby no message needed as input;
-            // but we should return last picture taken timestamp
-
-            // Normally we would do some work here, like download a file.
-            // For our sample, we just sleep for 5 seconds.
-
+        public void startBurst() {
             if(this.cameraManager != null) {
                 this.cameraManager.startBurst();
+                this.burstInfoReceiver.setIsBurstOn(true);
             }
             else {
                 //FIXME
                 // this shouldn't happen
                 Log.e(TAG, "Null camera");
             }
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+
+            // Not implemented, using this.startBurst() instead
 
             /*try {
                 Thread.sleep(5000);
@@ -108,6 +123,8 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
 
     @Override
     public void onCreate() {
+        this.myBurstInfo = new BurstInfo();
+
         // Start up the thread running the service. Note that we create a
         // separate thread because the service normally runs in the process's
         // main thread, which we don't want to block. We also make it
@@ -120,6 +137,14 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         serviceLooper = thread.getLooper();
         serviceHandler = new BurstServiceHandler(serviceLooper);
         Log.i(TAG, "Service created");
+
+        // get camera manager and pass it to serviceHandler
+        Log.i(TAG, "Creating camera manager..");
+        Camera1Manager cameraManager = new Camera1Manager(this,
+                this.mainActivity,
+                this);
+        Log.i(TAG, "Camera manager should be created: " + cameraManager.toString());
+        this.serviceHandler.initialize(cameraManager, this);
     }
 
     @Override
@@ -128,22 +153,13 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         Log.i(TAG, "service starting");
         this.mainActivity = MainActivity.activity;
 
-        //TODO
-        // get camera manager and pass it to serviceHandler
-        Log.i(TAG, "Creating camera manager..");
-        Camera1Manager cameraManager = new Camera1Manager(this,
-                this.mainActivity,
-                this.mainActivity, this);
-        Log.i(TAG, "Camera manager should be created: " + cameraManager.toString());
-        this.serviceHandler.setCameraManager(cameraManager);
-
         // For each start request, send a message to start a job and deliver the
         // start ID so we know which request we're stopping when we finish the job
-        Message msg = serviceHandler.obtainMessage();
+        /*Message msg = this.serviceHandler.obtainMessage();
         msg.arg1 = startId;
-        serviceHandler.sendMessage(msg);
+        this.serviceHandler.sendMessage(msg);*/
 
-        requestRunInForeground();
+        this.startBurst();
 
         // If we get killed, after returning from here, restart
         return START_STICKY;
@@ -183,6 +199,7 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
     public void startBurst() {
         // throw new IllegalAccessException("Not yet implemented");
         requestRunInForeground();
+        serviceHandler.startBurst();
     }
 
     public void stopBurst() {
@@ -193,18 +210,12 @@ public class PhotoBurstService extends Service implements BurstInfoReceiver {
         // throw new IllegalAccessException("Not yet implemented");
         stopForeground(true);
         Log.d(TAG, "stopForeground(true) called");
-        stopSelf();
-        Log.d(TAG, "stopSelf() called");
+        /*stopSelf();
+        Log.d(TAG, "stopSelf() called");*/
     }
 
     public void closeCameraManager() {
        serviceHandler.cameraManager.close();
-    }
-
-    public boolean isBurstOn() {
-        //TODO FIXME
-        //throw new IllegalAccessException("Not yet implemented");
-        return false;
     }
 
     public int getImagesCount() {

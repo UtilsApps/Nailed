@@ -1,7 +1,13 @@
 package it.utils.nailed;
 
+import android.hardware.Camera;
+
 public interface BurstInfoReceiver {
 
-    public void setBurstInfo(BurstInfo burstInfo);
+    public void updateBurstInfo(Camera1ManagerStateBased.BurstState burstState);
+
+    public void updateBurstInfo(Camera.Size preferredSize);
+
+    public void setIsBurstOn(boolean isBurstOn);
 }
 

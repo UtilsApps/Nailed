@@ -94,6 +94,14 @@
 
         </LinearLayout>
         <TextView
+            android:id="@+id/connectedTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorEletricBlue"
+            android:text="Not connected"
+            >
+        </TextView>
+        <TextView
             android:id="@+id/pictureSizeTV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

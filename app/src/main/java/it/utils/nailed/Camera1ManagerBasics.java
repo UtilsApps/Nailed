@@ -1,15 +1,26 @@
 package it.utils.nailed;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.provider.MediaStore;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Timer;
+
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
 abstract class Camera1ManagerBasics {
 
@@ -78,10 +89,71 @@ abstract class Camera1ManagerBasics {
         }
     }
 
-    protected void hapticFeedBack() {
 
-        if(this.vibeHapticFeedback != null
-                && this.vibeHapticFeedback.hasVibrator()) {
+    protected static void saveImageFile(byte[] data, Context context,
+                                        Camera1ManagerBasics camera1ManagerBasics) {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            File pictureFile = ImageSaver.getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            if (pictureFile == null){
+                Log.d(TAG, "Error creating media file, check storage permissions");
+                return;
+            }
+
+            try {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+                hapticFeedBack(camera1ManagerBasics);
+            } catch (FileNotFoundException e) {
+                Log.d(TAG, "File not found: " + e.getMessage());
+            } catch (IOException e) {
+                Log.d(TAG, "Error accessing file: " + e.getMessage());
+            }
+        }
+        else {
+            // Android 10 and above
+
+            // Add a specific media item.
+            ContentResolver resolver = context.getContentResolver();
+
+            // Find all image files on the primary external storage device.
+            Uri imageCollection = MediaStore.Images.Media.getContentUri(
+                    MediaStore.VOLUME_EXTERNAL_PRIMARY);
+
+            // Publish a new picture/image
+            ContentValues newImageDetails = new ContentValues();
+            String pictureFileName = ImageSaver.getOutputMediaFileName(MEDIA_TYPE_IMAGE);
+            newImageDetails.put(MediaStore.Images.Media.DISPLAY_NAME, pictureFileName);
+            newImageDetails.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            String dirName = "Pictures/" + ImageSaver.getDirNameByTodayDate();
+            newImageDetails.put(MediaStore.Images.Media.RELATIVE_PATH, dirName);
+            newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 1);
+
+            // Keeps a handle to the new image's URI in case we need to modify it later.
+            Uri newImageUri = resolver.insert(imageCollection, newImageDetails);
+
+            try(OutputStream os = resolver.openOutputStream(newImageUri)) {
+                os.write(data);
+                os.close();
+                hapticFeedBack(camera1ManagerBasics);
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "File not found to save image: " + newImageUri.toString());
+            } catch (IOException e) {
+                Log.e(TAG, "Error while trying to open file to save image" + e.toString());
+            }
+
+            //bmp.compress(Bitmap.CompressFormat.JPEG, 90, out)
+
+            newImageDetails.clear();
+            newImageDetails.put(MediaStore.Images.Media.IS_PENDING, 0);
+            resolver.update(newImageUri, newImageDetails, null, null);
+        }
+    }
+
+    protected static void hapticFeedBack(Camera1ManagerBasics camera1ManagerBasics) {
+
+        if(camera1ManagerBasics.vibeHapticFeedback != null
+                && camera1ManagerBasics.vibeHapticFeedback.hasVibrator()) {
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 //&& this.vibeHapticFeedback.hasAmplitudeControl()
@@ -100,13 +172,13 @@ abstract class Camera1ManagerBasics {
                                 50);
                     }
 
-                    this.vibeHapticFeedback.vibrate(vibe);
+                    camera1ManagerBasics.vibeHapticFeedback.vibrate(vibe);
                 } catch (Exception e) {
                     //Log.e(TAG, "Unable to vibrate " + e.toString());
-                    defaultVibration();
+                    camera1ManagerBasics.defaultVibration();
                 }
             } else {
-                defaultVibration();
+                camera1ManagerBasics.defaultVibration();
             }
         }
     }
@@ -116,7 +188,7 @@ abstract class Camera1ManagerBasics {
 
         //this.vibeHapticFeedback.vibrate(VibrationEffect.EFFECT_CLICK);
 
-        this.vibeHapticFeedback.vibrate(DEFAULT_VIBRATION_MILLIS);
+        vibeHapticFeedback.vibrate(DEFAULT_VIBRATION_MILLIS);
     }
 
     //TODO FIXME check why this is called when stopping burst instead of app exiting

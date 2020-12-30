@@ -182,12 +182,18 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        int min = 0;
-        int max = 10;
-        int random = (int) (Math.random() * (max - min + 1) + min) % max;
-        String randomCounterTxt = "(" + random + ") ";
-
+        String randomCounterTxt = "(" + getRandomChar() + ") ";
         picSizeTV.setText(randomCounterTxt + picSizeTxt + "; " + burstStateTxt);
+    }
+
+    public static char getRandomChar() {
+        String alphabet = "0123456789abcdefghijklmnopqrstuvwxyzαβγδεζηθικλμνξοπρσςτυφχψω";
+        int min = 0;
+        int max = alphabet.length();
+        int randomInt = (int) (Math.random() * (max - min + 1) + min) % max;
+        char randomChar = alphabet.charAt(randomInt);
+
+        return randomChar;
     }
 
     //TODO haptic feedback at each picture

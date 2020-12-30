@@ -66,6 +66,8 @@ public class MainActivity extends AppCompatActivity
         timerHandler.post(BurstInfoTextViewsUpdater);
     }
 
+    //FIXME: it does not work after clicking on stop burst and then on start again
+    //
     final Handler timerHandler = new Handler();
     final Runnable BurstInfoTextViewsUpdater = new Runnable() {
         @Override
@@ -158,15 +160,25 @@ public class MainActivity extends AppCompatActivity
         String picSizeTxt = "";
         String burstStateTxt = "";
 
-        if(mBoundToService && mBoundService.myBurstInfo != null) {
-            Camera.Size preferredSize = mBoundService.myBurstInfo.preferredSize;
+        if(mBoundToService && mBoundService.getBurstInfo() != null) {
+            Camera.Size preferredSize = mBoundService.getBurstInfo().preferredSize;
             if(preferredSize != null) {
                 picSizeTxt = preferredSize.height + " x " + preferredSize.width;
             }
-            burstStateTxt = mBoundService.myBurstInfo.burstState.toString();
+            burstStateTxt = mBoundService.getBurstInfo().burstState.toString();
+        } else {
+            picSizeTxt = "mBoundToService: " + mBoundToService;
+            if(mBoundService != null) {
+                burstStateTxt = "BurstInfo: " + mBoundService.getBurstInfo();
+            }
         }
 
-        picSizeTV.setText(picSizeTxt + "; " + burstStateTxt);
+        int min = 0;
+        int max = 10;
+        int random = (int) (Math.random() * (max - min + 1) + min) % max;
+        String randomCounterTxt = "(" + random + ") ";
+
+        picSizeTV.setText(randomCounterTxt + picSizeTxt + "; " + burstStateTxt);
     }
 
     //TODO haptic feedback at each picture
